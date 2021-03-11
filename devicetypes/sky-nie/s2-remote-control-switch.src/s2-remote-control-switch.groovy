@@ -86,7 +86,7 @@ metadata {
 
 		attribute "lastCheckIn", "string"
 
-		fingerprint mfr: "0312", prod: "0004", model: "F001", deviceJoinName: "Zooz Remote Switch"
+		fingerprint mfr: "0312", prod: "0004", model: "F001", deviceJoinName: "Remote Control Switch"
 	}
 
 	simulator { }
