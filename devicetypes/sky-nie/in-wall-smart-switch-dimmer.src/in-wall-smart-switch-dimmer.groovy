@@ -61,7 +61,6 @@ import groovy.transform.Field
 
 @Field static Map ledModeOptions = [0:"Off When On", 1:"On When On", 2:"Always Off", 3:"Always On"]
 
-@Field static Map associationReportsOptions = [0:"None", 1:"Physical", 2:"3-way", 3:"3-way and Physical", 4:"Digital", 5:"Digital and Physical", 6:"Digital and 3-way", 7:"Digital, Physical, and 3-way", 8:"Timer", 9:"Timer and Physical", 10:"Timer and 3-way", 11:"Timer, 3-Way, and Physical", 12:"Timer and Digital", 13:"Timer, Digital, and Physical", 14:"Timer, Digital, and 3-way", 15:"All"]
 
 @Field static Map autoOnOffIntervalOptions = [0:"Disabled", 1:"1 Minute", 2:"2 Minutes", 3:"3 Minutes", 4:"4 Minutes", 5:"5 Minutes", 6:"6 Minutes", 7:"7 Minutes", 8:"8 Minutes", 9:"9 Minutes", 10:"10 Minutes", 15:"15 Minutes", 20:"20 Minutes", 25:"25 Minutes", 30:"30 Minutes", 45:"45 Minutes", 60:"1 Hour", 120:"2 Hours", 180:"3 Hours", 240:"4 Hours", 300:"5 Hours", 360:"6 Hours", 420:"7 Hours", 480:"8 Hours", 540:"9 Hours", 600:"10 Hours", 720:"12 Hours", 1080:"18 Hours", 1440:"1 Day", 2880:"2 Days", 4320:"3 Days", 5760:"4 Days", 7200:"5 Days", 8640:"6 Days", 10080:"1 Week", 20160:"2 Weeks", 30240:"3 Weeks", 40320:"4 Weeks", 50400:"5 Weeks", 60480:"6 Weeks"]
 
@@ -114,6 +113,7 @@ metadata {
                 attributeState "level", action:"switch level.setLevel"
             }
         }
+
         standardTile("refresh", "device.refresh", width: 2, height: 2) {
             state "refresh", label:'Refresh', action: "refresh"
         }
@@ -189,7 +189,7 @@ private initialize() {
             child?.sendEvent(checkIntervalEvt)
         }
         catch (ex) {
-            log.warn "Unable to create button device because the 'Component Button' DTH is not installed"
+            log.warn "Unable to create button device because the 'Child Button' DTH is not installed"
         }
     }
     else if (!state.createButtonEnabled && childDevices) {
@@ -201,8 +201,8 @@ private addChildButton() {
     log.warn "Creating Button Device"
 
     def child = addChildDevice(
-            "krlaframboise",
-            "Component Button",
+            "sky-nie",
+            "Child Button",
             "${device.deviceNetworkId}-BUTTON",
             device.getHub().getId(),
             [
@@ -576,7 +576,6 @@ private getConfigParams() {
             ledModeParam,
             autoOffIntervalParam,
             autoOnIntervalParam,
-            // associationReportsParam,
             powerFailureRecoveryParam,
             pushDimmingDurationParam,
             holdDimmingDurationParam,
@@ -600,9 +599,6 @@ private getAutoOnIntervalParam() {
     return getParam(6, "Auto Turn-On Timer", 4, 0, autoOnOffIntervalOptions)
 }
 
-private getAssociationReportsParam() {
-    return getParam(7, "Association Settings", 1, 1, associationReportsOptions)
-}
 
 private getPowerFailureRecoveryParam() {
     return getParam(8, "Power Failure Recovery", 1, 0, powerFailureRecoveryOptions)
@@ -688,5 +684,5 @@ private logDebug(msg) {
 }
 
 private logTrace(msg) {
-    // log.trace "$msg"
+    log.trace "$msg"
 }

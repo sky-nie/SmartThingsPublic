@@ -177,7 +177,7 @@ private initialize() {
             child?.sendEvent(checkIntervalEvt)
         }
         catch (ex) {
-            log.warn "Unable to create button device because the 'Component Button' DTH is not installed"
+            log.warn "Unable to create button device because the 'Child Button' DTH is not installed"
         }
     }
     else if (!state.createButtonEnabled && childDevices) {
@@ -189,8 +189,8 @@ private addChildButton() {
     log.warn "Creating Button Device"
 
     def child = addChildDevice(
-            "krlaframboise",
-            "Component Button",
+            "sky-nie",
+            "Child Button",
             "${device.deviceNetworkId}-BUTTON",
             device.getHub().getId(),
             [

@@ -32,7 +32,7 @@
 
 import groovy.json.JsonOutput
 import groovy.transform.Field
-def cmd = zwave.parse(description, [0x25: 1, 0x30: 1,  0x80: 1, 0x84: 1, 0x9C: 1])
+
 @Field static Map commandClassVersions = [
         0x20: 1,	// Basic
         0x26: 3,	// Switch Multilevel
@@ -217,7 +217,7 @@ private initialize() {
             child?.sendEvent(checkIntervalEvt)
         }
         catch (ex) {
-            log.warn "Unable to create button device because the 'Component Button' DTH is not installed"
+            log.warn "Unable to create button device because the 'Child Button' DTH is not installed"
         }
     }
     else if (!state.createButtonEnabled && childDevices) {
@@ -229,8 +229,8 @@ private addChildButton() {
     log.warn "Creating Button Device"
 
     def child = addChildDevice(
-            "krlaframboise",
-            "Component Button",
+            "sky-nie",
+            "Child Button",
             "${device.deviceNetworkId}-BUTTON",
             device.getHub().getId(),
             [
@@ -620,7 +620,6 @@ private setParamStoredValue(paramNum, value) {
 
 private getConfigParams() {
     return [
-            // paddleControlParam,
             ledModeParam,
             autoOffIntervalParam,
             autoOnIntervalParam,
@@ -635,9 +634,6 @@ private getConfigParams() {
     ]
 }
 
-//private getPaddleControlParam() {
-//	return getParam(1, "Paddle Control", 1, 0, paddleControlOptions)
-//}
 
 private getLedModeParam() {
 	return getParam(2, "LED Indicator Mode", 1, 0, ledModeOptions)
