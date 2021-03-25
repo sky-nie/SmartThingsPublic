@@ -94,6 +94,30 @@ metadata {
 
     simulator { }
 
+	tiles(scale: 2) {
+		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
+			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
+				attributeState "on", label:'${name}', action:"switch.off", icon:"st.Lighting.light13", backgroundColor:"#00a0dc", nextState:"turningOff"
+				attributeState "off", label:'${name}', action:"switch.on", icon:"st.Lighting.light13", backgroundColor:"#ffffff", nextState:"turningOn"
+				attributeState "turningOn", label:'TURNING ON', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#00a0dc", nextState:"turningOff"
+				attributeState "turningOff", label:'TURNING OFF', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
+			}
+		}
+		standardTile("refresh", "device.refresh", width: 2, height: 2) {
+			state "refresh", label:'Refresh', action: "refresh"
+		}
+		valueTile("syncStatus", "device.syncStatus", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state "syncStatus", label:'${currentValue}'
+		}
+		standardTile("sync", "device.configure", width: 2, height: 2) {
+			state "default", label: 'Sync', action: "configure"
+		}
+		valueTile("firmwareVersion", "device.firmwareVersion", decoration:"flat", width:3, height: 1) {
+			state "firmwareVersion", label:'Firmware ${currentValue}'
+		}
+		main "switch"
+		details(["switch", "refresh", "syncStatus", "sync", "firmwareVersion"])
+	}
     preferences {
         configParams.each {
             createEnumInput("configParam${it.num}", "${it.name}:", it.value, it.options)
@@ -112,10 +136,6 @@ private createEnumInput(name, title, defaultVal, options) {
 def installed() {
     logDebug "installed()..."
 
- //   if (state.debugLoggingEnabled == null) {
- //       state.debugLoggingEnabled = true
- //       state.createButtonEnabled = true
- //   }
 }
 
 def updated() {
@@ -124,8 +144,8 @@ def updated() {
 
         logDebug "updated()..."
 
-        state.debugLoggingEnabled = false//(safeToInt(settings?.debugOutput) != 0)
-        state.createButtonEnabled = false//(safeToInt(settings?.createButton) != 0)
+        state.debugLoggingEnabled = false
+        state.createButtonEnabled = false
 
         initialize()
 
