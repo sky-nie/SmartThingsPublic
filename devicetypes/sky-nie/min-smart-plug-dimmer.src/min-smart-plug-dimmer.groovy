@@ -1,5 +1,5 @@
 /**
- *      Min Smart Plug Dimmer v1.0.0
+ *      Min Smart Plug Dimmer v1.0.1
  *
  *  	Models: MINOSTON (MP21ZD)
  *
@@ -9,6 +9,9 @@
  *	Documentation:
  *
  *  Changelog:
+ *
+ *    1.0.1 (03/17/2021)
+ *      - Simplify the code, delete dummy code
  *
  *    1.0.0 (03/11/2021)
  *      - Initial Release
@@ -53,9 +56,7 @@ import groovy.transform.Field
         0x9F: 1		// Security S2
 ]
 
-@Field static Map buttons = [0:"upper", 1:"lower"]
 
-@Field static Map paddleControlOptions = [0:"Normal", 1:"Reverse", 2:"Toggle"]
 @Field static Integer reversePaddle = 1
 @Field static Integer togglePaddle = 2
 
@@ -69,9 +70,9 @@ import groovy.transform.Field
 
 @Field static Map noYesOptions = [0:"No", 1:"Yes"]
 
-@Field static Map dimmingDurationOptions0 = [0:"Disabled", 1:"1 Second", 2:"2 Seconds", 3:"3 Seconds", 4:"4 Seconds", 5:"5 Seconds", 6:"6 Seconds", 7:"7 Seconds", 8:"8 Seconds", 9:"9 Seconds", 10:"10 Seconds"]
+@Field static Map dimmingDurationOptions1 = [0:"Disabled", 1:"1 Second", 2:"2 Seconds", 3:"3 Seconds", 4:"4 Seconds", 5:"5 Seconds", 6:"6 Seconds", 7:"7 Seconds", 8:"8 Seconds", 9:"9 Seconds", 10:"10 Seconds"]
 
-@Field static Map dimmingDurationOptions1 = [1:"1 Second", 2:"2 Seconds", 3:"3 Seconds", 4:"4 Seconds", 5:"5 Seconds", 6:"6 Seconds", 7:"7 Seconds", 8:"8 Seconds", 9:"9 Seconds", 10:"10 Seconds"]
+@Field static Map dimmingDurationOptions = [1:"1 Second", 2:"2 Seconds", 3:"3 Seconds", 4:"4 Seconds", 5:"5 Seconds", 6:"6 Seconds", 7:"7 Seconds", 8:"8 Seconds", 9:"9 Seconds", 10:"10 Seconds"]
 
 @Field static Map brightnessOptions = [0:"Disabled", 1:"1%", 5:"5%", 10:"10%", 15:"15%", 20:"20%", 25:"25%", 30:"30%", 35:"35%", 40:"40%", 45:"45%", 50:"50%", 55:"55%",60:"60%", 65:"65%", 70:"70%", 75:"75%", 80:"80%", 85:"85%", 90:"90%", 95:"95%", 99:"99%"]
 
@@ -84,8 +85,9 @@ metadata {
             name: "Min Smart Plug Dimmer",
             namespace: "sky-nie",
             author: "winnie",
-            vid:"generic-dimmer",
-            ocfDeviceType: "oic.d.switch"
+            mnmn: "SmartThings",
+            vid:"generic-dimmer-3",
+            ocfDeviceType: "oic.d.smartplug"
     ) {
             capability "Actuator"
             capability "Sensor"
@@ -100,70 +102,16 @@ metadata {
             attribute "firmwareVersion", "string"
             attribute "lastCheckIn", "string"
             attribute "syncStatus", "string"
-            fingerprint mfr: "0312", prod: "FF00", model: "FF0D", deviceJoinName: "Minoston Dimmer Switch", ocfDeviceType: "oic.d.smartplug" //MP21ZD Minoston Mini Smart Plug Dimmer
+
+            fingerprint mfr: "0312", prod: "FF00", model: "FF0D", deviceJoinName: "Minoston Dimmer Switch" //MP21ZD Minoston Mini Smart Plug Dimmer
 	}
 
     simulator { }
-
-    tiles(scale: 2) {
-        multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
-            tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-                attributeState "on", label:'${name}', action:"switch.off", icon:"st.Lighting.light13", backgroundColor:"#00a0dc", nextState:"turningOff"
-                attributeState "off", label:'${name}', action:"switch.on", icon:"st.Lighting.light13", backgroundColor:"#ffffff", nextState:"turningOn"
-                attributeState "turningOn", label:'TURNING ON', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#00a0dc", nextState:"turningOff"
-                attributeState "turningOff", label:'TURNING OFF', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
-            }
-            tileAttribute("device.temperature", key: "SECONDARY_CONTROL") {
-                attributeState("temperature", label: '${currentValue}°', icon: "st.alarm.temperature.normal",
-                        backgroundColors: [
-                                // Celsius
-                                [value: 0, color: "#153591"],
-                                [value: 7, color: "#1e9cbb"],
-                                [value: 15, color: "#90d2a7"],
-                                [value: 23, color: "#44b621"],
-                                [value: 28, color: "#f1d801"],
-                                [value: 35, color: "#d04e00"],
-                                [value: 37, color: "#bc2323"],
-                                // Fahrenheit
-                                [value: 40, color: "#153591"],
-                                [value: 44, color: "#1e9cbb"],
-                                [value: 59, color: "#90d2a7"],
-                                [value: 74, color: "#44b621"],
-                                [value: 84, color: "#f1d801"],
-                                [value: 95, color: "#d04e00"],
-                                [value: 96, color: "#bc2323"]
-                        ]
-                )
-            }
-            tileAttribute ("device.level", key: "SLIDER_CONTROL") {
-                attributeState "level", action:"switch level.setLevel"
-            }
-        }
-
-        standardTile("refresh", "device.refresh", width: 2, height: 2) {
-            state "refresh", label:'Refresh', action: "refresh"
-        }
-        valueTile("syncStatus", "device.syncStatus", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "syncStatus", label:'${currentValue}'
-        }
-        standardTile("sync", "device.configure", width: 2, height: 2) {
-            state "default", label: 'Sync', action: "configure"
-        }
-        valueTile("firmwareVersion", "device.firmwareVersion", decoration:"flat", width:3, height: 1) {
-            state "firmwareVersion", label:'Firmware ${currentValue}'
-        }
-        main "switch"
-        details(["switch", "refresh", "syncStatus", "sync", "firmwareVersion"])
-    }
 
     preferences {
         configParams.each {
             createEnumInput("configParam${it.num}", "${it.name}:", it.value, it.options)
         }
-
-        //createEnumInput("createButton", "Create Button for Paddles?", 1, setDefaultOption(noYesOptions, 1))
-
-        //createEnumInput("debugOutput", "Enable Debug Logging?", 1, setDefaultOption(noYesOptions, 1))
     }
 }
 
@@ -656,11 +604,11 @@ private getPowerFailureRecoveryParam() {
 }
 
 private getPushDimmingDurationParam() {
-    return getParam(9, "Push Dimming Duration", 1, 2, dimmingDurationOptions0)
+    return getParam(9, "Push Dimming Duration", 1, 2, dimmingDurationOptions1)
 }
 
 private getHoldDimmingDurationParam() {
-    return getParam(10, "Hold Dimming Duration", 1, 4, dimmingDurationOptions1)
+    return getParam(10, "Hold Dimming Duration", 1, 4, dimmingDurationOptions)
 }
 
 private getMinimumBrightnessParam() {

@@ -1,5 +1,5 @@
 /**
- *  In-Wall Smart Switch Dimmer v1.0.0
+ *  In-Wall Smart Switch Dimmer v1.0.1
  *
  *  	Models: Eva Logik (ZW31) / MINOSTON (MS11Z)
  *
@@ -9,7 +9,10 @@
  *	Documentation:
  *
  *  Changelog:
-
+ *
+ *    1.0.1 (03/17/2021)
+ *      - Simplify the code, delete dummy code
+ *
  *    1.0.0 (03/11/2021)
  *      - Initial Release
  *
@@ -77,8 +80,9 @@ metadata {
             name: "In-Wall Smart Switch Dimmer",
             namespace: "sky-nie",
             author: "winnie",
+            mnmn: "SmartThings",
             vid:"generic-dimmer",
-            ocfDeviceType: "oic.d.switch"
+            ocfDeviceType: "oic.d.smartplug"
     ) {
         capability "Actuator"
         capability "Sensor"
@@ -93,42 +97,13 @@ metadata {
         attribute "lastCheckIn", "string"
         attribute "syncStatus", "string"
 
-        fingerprint mfr: "0312", prod: "0004", model: "EE02", deviceJoinName: "Minoston Dimmer Switch", ocfDeviceType: "oic.d.smartplug" //MS11ZS Minoston Smart Dimmer Switch   *
-        fingerprint mfr: "0312", prod: "EE00", model: "EE04", deviceJoinName: "Minoston Dimmer Switch", ocfDeviceType: "oic.d.smartplug" //MS13ZS Minoston Smart Toggle Dimmer Switch  *
-        fingerprint mfr: "0312", prod: "BB00", model: "BB02", deviceJoinName: "Evalogik Dimmer Switch", ocfDeviceType: "oic.d.smartplug" //ZW31S Evalogik Smart Dimmer Switch   *
-        fingerprint mfr: "0312", prod: "BB00", model: "BB04", deviceJoinName: "Evalogik Dimmer Switch", ocfDeviceType: "oic.d.smartplug" //ZW31TS Evalogik Smart Toggle Dimmer Switch   *
+        fingerprint mfr: "0312", prod: "0004", model: "EE02", deviceJoinName: "Minoston Dimmer Switch" //MS11ZS Minoston Smart Dimmer Switch   *
+        fingerprint mfr: "0312", prod: "EE00", model: "EE04", deviceJoinName: "Minoston Dimmer Switch" //MS13ZS Minoston Smart Toggle Dimmer Switch  *
+        fingerprint mfr: "0312", prod: "BB00", model: "BB02", deviceJoinName: "Evalogik Dimmer Switch" //ZW31S Evalogik Smart Dimmer Switch   *
+        fingerprint mfr: "0312", prod: "BB00", model: "BB04", deviceJoinName: "Evalogik Dimmer Switch" //ZW31TS Evalogik Smart Toggle Dimmer Switch   *
     }
 
     simulator { }
-
-    tiles(scale: 2) {
-        multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
-            tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-                attributeState "on", label:'${name}', action:"switch.off", icon:"st.Lighting.light13", backgroundColor:"#00a0dc", nextState:"turningOff"
-                attributeState "off", label:'${name}', action:"switch.on", icon:"st.Lighting.light13", backgroundColor:"#ffffff", nextState:"turningOn"
-                attributeState "turningOn", label:'TURNING ON', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#00a0dc", nextState:"turningOff"
-                attributeState "turningOff", label:'TURNING OFF', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
-            }
-            tileAttribute ("device.level", key: "SLIDER_CONTROL") {
-                attributeState "level", action:"switch level.setLevel"
-            }
-        }
-
-        standardTile("refresh", "device.refresh", width: 2, height: 2) {
-            state "refresh", label:'Refresh', action: "refresh"
-        }
-        valueTile("syncStatus", "device.syncStatus", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "syncStatus", label:'${currentValue}'
-        }
-        standardTile("sync", "device.configure", width: 2, height: 2) {
-            state "default", label: 'Sync', action: "configure"
-        }
-        valueTile("firmwareVersion", "device.firmwareVersion", decoration:"flat", width:3, height: 1) {
-            state "firmwareVersion", label:'Firmware ${currentValue}'
-        }
-        main "switch"
-        details(["switch", "refresh", "syncStatus", "sync", "firmwareVersion"])
-    }
 
     preferences {
         configParams.each {
@@ -136,7 +111,6 @@ metadata {
         }
 
         createEnumInput("createButton", "Create Button for Paddles?", 1, setDefaultOption(noYesOptions, 1))
-
         createEnumInput("debugOutput", "Enable Debug Logging?", 1, setDefaultOption(noYesOptions, 1))
     }
 }

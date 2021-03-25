@@ -1,5 +1,5 @@
 /**
- *      Min Smart Plug v1.0.0
+ *      Min Smart Plug v1.0.1
  *
  *  	Models: MINOSTON (MP21Z)
  *
@@ -9,6 +9,9 @@
  *	Documentation:
  *
  *  Changelog:
+ *
+ *    1.0.1 (03/17/2021)
+ *      - Simplify the code, delete dummy code
  *
  *    1.0.0 (03/11/2021)
  *      - Initial Release
@@ -53,13 +56,10 @@ import groovy.transform.Field
         0x9F: 1		// Security S2
 ]
 
-//@Field static Map paddleControlOptions = [0:"Normal", 1:"Reverse", 2:"Toggle"]
 @Field static Integer reversePaddle = 1
 @Field static Integer togglePaddle = 2
 
 @Field static Map ledModeOptions = [0:"On When On", 1:"Off When On", 2:"Always Off"]//, 3:"Always On"
-
-//@Field static Map associationReportsOptions = [0:"None", 1:"Physical", 2:"3-way", 3:"3-way and Physical", 4:"Digital", 5:"Digital and Physical", 6:"Digital and 3-way", 7:"Digital, Physical, and 3-way", 8:"Timer", 9:"Timer and Physical", 10:"Timer and 3-way", 11:"Timer, 3-Way, and Physical", 12:"Timer and Digital", 13:"Timer, Digital, and Physical", 14:"Timer, Digital, and 3-way", 15:"All"]
 
 @Field static Map autoOnOffIntervalOptions = [0:"Disabled", 1:"1 Minute", 2:"2 Minutes", 3:"3 Minutes", 4:"4 Minutes", 5:"5 Minutes", 6:"6 Minutes", 7:"7 Minutes", 8:"8 Minutes", 9:"9 Minutes", 10:"10 Minutes", 15:"15 Minutes", 20:"20 Minutes", 25:"25 Minutes", 30:"30 Minutes", 45:"45 Minutes", 60:"1 Hour", 120:"2 Hours", 180:"3 Hours", 240:"4 Hours", 300:"5 Hours", 360:"6 Hours", 420:"7 Hours", 480:"8 Hours", 540:"9 Hours", 600:"10 Hours", 720:"12 Hours", 1080:"18 Hours", 1440:"1 Day", 2880:"2 Days", 4320:"3 Days", 5760:"4 Days", 7200:"5 Days", 8640:"6 Days", 10080:"1 Week", 20160:"2 Weeks", 30240:"3 Weeks", 40320:"4 Weeks", 50400:"5 Weeks", 60480:"6 Weeks"]
 
@@ -72,8 +72,9 @@ metadata {
             name: "Min Smart Plug",
             namespace: "sky-nie",
             author: "winnie",
+            mnmn: "SmartThings",
             vid:"generic-switch",
-            ocfDeviceType: "oic.d.switch"
+            ocfDeviceType: "oic.d.smartplug"
     ) {
         capability "Actuator"
         capability "Sensor"
@@ -87,45 +88,16 @@ metadata {
         attribute "lastCheckIn", "string"
         attribute "syncStatus", "string"
 
-        fingerprint mfr: "0312", prod: "C000", model: "C009", deviceJoinName: "Minoston Mini Plug",    ocfDeviceType: "oic.d.smartplug" // old MP21Z
-        fingerprint mfr: "0312", prod: "FF00", model: "FF0C", deviceJoinName: "Minoston Mini Plug",    ocfDeviceType: "oic.d.smartplug" //MP21Z Minoston Mini Smart Plug  
+        fingerprint mfr: "0312", prod: "C000", model: "C009", deviceJoinName: "Minoston Mini Plug" // old MP21Z
+        fingerprint mfr: "0312", prod: "FF00", model: "FF0C", deviceJoinName: "Minoston Mini Plug" //MP21Z Minoston Mini Smart Plug
     }
 
     simulator { }
-
-    tiles(scale: 2) {
-        multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
-            tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-                attributeState "on", label:'${name}', action:"switch.off", icon:"st.Lighting.light13", backgroundColor:"#00a0dc", nextState:"turningOff"
-                attributeState "off", label:'${name}', action:"switch.on", icon:"st.Lighting.light13", backgroundColor:"#ffffff", nextState:"turningOn"
-                attributeState "turningOn", label:'TURNING ON', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#00a0dc", nextState:"turningOff"
-                attributeState "turningOff", label:'TURNING OFF', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
-            }
-        }
-        standardTile("refresh", "device.refresh", width: 2, height: 2) {
-            state "refresh", label:'Refresh', action: "refresh"
-        }
-        valueTile("syncStatus", "device.syncStatus", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "syncStatus", label:'${currentValue}'
-        }
-        standardTile("sync", "device.configure", width: 2, height: 2) {
-            state "default", label: 'Sync', action: "configure"
-        }
-        valueTile("firmwareVersion", "device.firmwareVersion", decoration:"flat", width:3, height: 1) {
-            state "firmwareVersion", label:'Firmware ${currentValue}'
-        }
-        main "switch"
-        details(["switch", "refresh", "syncStatus", "sync", "firmwareVersion"])
-    }
 
     preferences {
         configParams.each {
             createEnumInput("configParam${it.num}", "${it.name}:", it.value, it.options)
         }
-        
-       // createEnumInput("createButton", "Create Button for Paddles?", 1, setDefaultOption(noYesOptions, 1))
-
-       // createEnumInput("debugOutput", "Enable Debug Logging?", 1, setDefaultOption(noYesOptions, 1))
     }
 }
 
@@ -527,18 +499,13 @@ private setParamStoredValue(paramNum, value) {
 
 private getConfigParams() {
     return [
-            // paddleControlParam,
             ledModeParam,
             autoOffIntervalParam,
             autoOnIntervalParam,
-            // associationReportsParam,
             powerFailureRecoveryParam
     ]
 }
 
-//private getPaddleControlParam() {
-//	return getParam(1, "Paddle Control", 1, 0, paddleControlOptions)
-//}
 
 private getLedModeParam() {
     return getParam(1, "LED Indicator Mode", 1, 0, ledModeOptions)
@@ -551,10 +518,6 @@ private getAutoOffIntervalParam() {
 private getAutoOnIntervalParam() {
     return getParam(4, "Auto Turn-On Timer", 4, 0, autoOnOffIntervalOptions)
 }
-
-//private getAssociationReportsParam() {
-//	return getParam(7, "Association Settings", 1, 1, associationReportsOptions)
-//}
 
 private getPowerFailureRecoveryParam() {
     return getParam(6, "Power Failure Recovery", 1, 0, powerFailureRecoveryOptions)
@@ -580,8 +543,8 @@ private setDefaultOption(options, defaultVal) {
     }
 }
 
-private sendEventIfNew(name, value, displayed=true, type=null) {
-    def desc = "${name} is ${value}"
+private sendEventIfNew(name, value, displayed=true, type=null, unit="") {
+    def desc = "${name} is ${value}${unit}"
     if (device.currentValue(name) != value) {
         logDebug(desc)
 
@@ -589,6 +552,9 @@ private sendEventIfNew(name, value, displayed=true, type=null) {
 
         if (type) {
             evt.type = type
+        }
+        if (unit) {
+            evt.unit = unit
         }
         sendEvent(evt)
     }

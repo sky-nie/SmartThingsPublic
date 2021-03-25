@@ -1,5 +1,5 @@
 /**
- *  In-Wall Smart Switch v1.0.0
+ *  In-Wall Smart Switch v1.0.1
  *
  *  	Models: Eva Logik (ZW30) / MINOSTON (MS10Z)
  *
@@ -9,6 +9,9 @@
  *	Documentation:
  *
  *  Changelog:
+ *
+ *    1.0.1 (03/17/2021)
+ *      - Simplify the code, delete dummy code
  *
  *    1.0.0 (03/11/2021)
  *      - Initial Release
@@ -70,8 +73,9 @@ metadata {
             name: "In-Wall Smart Switch",
             namespace: "sky-nie",
             author: "winnie",
+            mnmn: "SmartThings",
             vid:"generic-switch",
-            ocfDeviceType: "oic.d.switch"
+            ocfDeviceType: "oic.d.smartplug"
     ) {
         capability "Actuator"
         capability "Sensor"
@@ -86,39 +90,14 @@ metadata {
         attribute "syncStatus", "string"
 
 
-        fingerprint mfr: "0312", prod: "EE00", model: "EE01", deviceJoinName: "Minoston Smart Switch",    ocfDeviceType: "oic.d.smartplug" //MS10ZS Minoston Smart Switch   
-        fingerprint mfr: "0312", prod: "EE00", model: "EE03", deviceJoinName: "Minoston Smart Switch", ocfDeviceType: "oic.d.smartplug" //MS12ZS Minoston Smart on/off Toggle Switch  
-        fingerprint mfr: "0312", prod: "A000", model: "A005", deviceJoinName: "EVA LOGIK In-Wall Switch", ocfDeviceType: "oic.d.smartplug" //ZW30   
-        fingerprint mfr: "0312", prod: "BB00", model: "BB01", deviceJoinName: "Evalogik Smart Switch",    ocfDeviceType: "oic.d.smartplug" //ZW30S Evalogik Smart on/off Switch  
-        fingerprint mfr: "0312", prod: "BB00", model: "BB03", deviceJoinName: "Evalogik Smart Switch",    ocfDeviceType: "oic.d.smartplug" //ZW30TS Evalogik Smart on/off Toggle Switch  
+        fingerprint mfr: "0312", prod: "EE00", model: "EE01", deviceJoinName: "Minoston Smart Switch"    //MS10ZS Minoston Smart Switch
+        fingerprint mfr: "0312", prod: "EE00", model: "EE03", deviceJoinName: "Minoston Smart Switch"    //MS12ZS Minoston Smart on/off Toggle Switch
+        fingerprint mfr: "0312", prod: "A000", model: "A005", deviceJoinName: "Evalogik In-Wall Switch" //ZW30
+        fingerprint mfr: "0312", prod: "BB00", model: "BB01", deviceJoinName: "Evalogik Smart Switch"    //ZW30S Evalogik Smart on/off Switch
+        fingerprint mfr: "0312", prod: "BB00", model: "BB03", deviceJoinName: "Evalogik Smart Switch"    //ZW30TS Evalogik Smart on/off Toggle Switch
     }
 
     simulator { }
-
-    tiles(scale: 2) {
-        multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
-            tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-                attributeState "on", label:'${name}', action:"switch.off", icon:"st.Lighting.light13", backgroundColor:"#00a0dc", nextState:"turningOff"
-                attributeState "off", label:'${name}', action:"switch.on", icon:"st.Lighting.light13", backgroundColor:"#ffffff", nextState:"turningOn"
-                attributeState "turningOn", label:'TURNING ON', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#00a0dc", nextState:"turningOff"
-                attributeState "turningOff", label:'TURNING OFF', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
-            }
-        }
-        standardTile("refresh", "device.refresh", width: 2, height: 2) {
-            state "refresh", label:'Refresh', action: "refresh"
-        }
-        valueTile("syncStatus", "device.syncStatus", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "syncStatus", label:'${currentValue}'
-        }
-        standardTile("sync", "device.configure", width: 2, height: 2) {
-            state "default", label: 'Sync', action: "configure"
-        }
-        valueTile("firmwareVersion", "device.firmwareVersion", decoration:"flat", width:3, height: 1) {
-            state "firmwareVersion", label:'Firmware ${currentValue}'
-        }
-        main "switch"
-        details(["switch", "refresh", "syncStatus", "sync", "firmwareVersion"])
-    }
 
     preferences {
         configParams.each {
@@ -200,13 +179,9 @@ private addChildButton() {
                     componentLabel: "${device.displayName}-Button"
             ]
     )
-
     child?.sendEvent(name:"supportedButtonValues", value:JsonOutput.toJson(["pushed", "down","down_2x","up","up_2x"]), displayed:false)
-
     child?.sendEvent(name:"numberOfButtons", value:1, displayed:false)
-
     sendButtonEvent("pushed")
-
     return child
 }
 
@@ -577,8 +552,8 @@ private setDefaultOption(options, defaultVal) {
     }
 }
 
-private sendEventIfNew(name, value, displayed=true, type=null) {
-    def desc = "${name} is ${value}"
+private sendEventIfNew(name, value, displayed=true, type=null, unit="") {
+    def desc = "${name} is ${value}${unit}"
     if (device.currentValue(name) != value) {
         logDebug(desc)
 
@@ -586,6 +561,9 @@ private sendEventIfNew(name, value, displayed=true, type=null) {
 
         if (type) {
             evt.type = type
+        }
+        if (unit) {
+            evt.unit = unit
         }
         sendEvent(evt)
     }
