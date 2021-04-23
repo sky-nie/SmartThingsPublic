@@ -23,7 +23,7 @@ metadata {
 		capability "Battery"
 		capability "Configuration"
 		capability "Health Check"
-		capability "Tamper Alert"
+        capability "Refresh"
 		capability "Temperature Measurement"
 		capability "Relative Humidity Measurement"
 
