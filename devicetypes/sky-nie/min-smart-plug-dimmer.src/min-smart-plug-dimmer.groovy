@@ -76,7 +76,7 @@ import groovy.transform.Field
 
 @Field static Map brightnessOptions = [0:"Disabled", 1:"1%", 5:"5%", 10:"10%", 15:"15%", 20:"20%", 25:"25%", 30:"30%", 35:"35%", 40:"40%", 45:"45%", 50:"50%", 55:"55%",60:"60%", 65:"65%", 70:"70%", 75:"75%", 80:"80%", 85:"85%", 90:"90%", 95:"95%", 99:"99%"]
 
-@Field static Map temperatureReportTimeOptions = [1:"1 Minute", 2:"2 Minutes", 3:"3 Minutes", 4:"4 Minutes", 5:"5 Minutes", 6:"6 Minutes", 7:"7 Minutes", 8:"8 Minutes", 9:"9 Minutes", 10:"10 Minutes", 15:"15 Minutes", 20:"20 Minutes", 25:"25 Minutes", 30:"30 Minutes", 35:"30 Minutes", 40:"30 Minutes", 45:"45 Minutes", 50:"30 Minutes", 55:"45 Minutes",60:"60 Minutes"]
+@Field static Map temperatureReportTimeOptions = [1:"1 Minute", 2:"2 Minutes", 3:"3 Minutes", 4:"4 Minutes", 5:"5 Minutes", 6:"6 Minutes", 7:"7 Minutes", 8:"8 Minutes", 9:"9 Minutes", 10:"10 Minutes", 15:"15 Minutes", 20:"20 Minutes", 25:"25 Minutes", 30:"30 Minutes", 35:"35 Minutes", 40:"40 Minutes", 45:"45 Minutes", 50:"350 Minutes", 55:"55 Minutes",60:"60 Minutes"]
 
 @Field static Map temperatureReportThresholdOptions = [1:"1℃/1.8°F", 2:"2℃/3.6°F", 3:"3℃/5.4°F", 4:"4℃/7.2°F", 5:"5℃/9.0°F", 6:"6℃/10.8°F", 7:"7℃/12.6°F", 8:"8℃/14.4°F", 9:"8℃/16.2°F", 10:"10℃/18°F"]
 
@@ -562,7 +562,6 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
 private sendButtonEvent(value) {
     def child = childDevices?.first()
     if (child) {
-        logDebug "${child.displayName} Button ${value}"
         childDevices[0].sendEvent(name: "button", value: value, data:[buttonNumber: 1], isStateChange: true)
     }
 }
