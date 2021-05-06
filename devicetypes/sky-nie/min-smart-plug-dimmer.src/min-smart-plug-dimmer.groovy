@@ -1,5 +1,5 @@
 /**
- *      Min Smart Plug Dimmer v1.0.1
+ *      Min Smart Plug Dimmer v1.1.1
  *
  *  	Models: MINOSTON (MP21ZD)
  *
@@ -9,6 +9,10 @@
  *	Documentation:
  *
  *  Changelog:
+  *
+ *    1.1.1 (05/06/2021)
+ *      - 1.Solve the problem that the temperature cannot be displayed normally
+ *      - 2.Synchronize some of the latest processing methods, refer to Minoston Door/Window Sensor
  *
  *    1.0.1 (03/17/2021)
  *      - Simplify the code, delete dummy code
@@ -33,71 +37,24 @@
  *
  */
 
-import groovy.json.JsonOutput
-import groovy.transform.Field
-
-@Field static Map commandClassVersions = [
-        0x20: 1,	// Basic
-        0x26: 3,	// Switch Multilevel
-        0x55: 1,	// Transport Service
-        0x59: 1,	// AssociationGrpInfo
-        0x5A: 1,	// DeviceResetLocally
-        0x31: 5,    // SENSOR_MULTILEVEL_V11
-        0x71: 3,	// NOTIFICATION_V8
-        0x6C: 1,	// Supervision
-        0x70: 1,	// Configuration
-        0x7A: 2,	// FirmwareUpdateMd
-        0x72: 2,	// ManufacturerSpecific
-        0x73: 1,	// Powerlevel
-        0x85: 2,	// Association
-        0x86: 1,	// Version (2)
-        0x8E: 2,	// Multi Channel Association
-        0x98: 1,	// Security S0
-        0x9F: 1		// Security S2
-]
-
-
-@Field static Integer reversePaddle = 1
-@Field static Integer togglePaddle = 2
-
-@Field static Map ledModeOptions = [0:"Off When On", 1:"On When On", 2:"Always Off", 3:"Always On"]
-
-@Field static Map nightLightOptions = [1:"10%", 2:"20%", 3:"30%", 4:"40%", 5:"50%", 6:"60%", 7:"70%", 8:"80%", 9:"90%", 10:"100%"]
-
-@Field static Map autoOnOffIntervalOptions = [0:"Disabled", 1:"1 Minute", 2:"2 Minutes", 3:"3 Minutes", 4:"4 Minutes", 5:"5 Minutes", 6:"6 Minutes", 7:"7 Minutes", 8:"8 Minutes", 9:"9 Minutes", 10:"10 Minutes", 15:"15 Minutes", 20:"20 Minutes", 25:"25 Minutes", 30:"30 Minutes", 45:"45 Minutes", 60:"1 Hour", 120:"2 Hours", 180:"3 Hours", 240:"4 Hours", 300:"5 Hours", 360:"6 Hours", 420:"7 Hours", 480:"8 Hours", 540:"9 Hours", 600:"10 Hours", 720:"12 Hours", 1080:"18 Hours", 1440:"1 Day", 2880:"2 Days", 4320:"3 Days", 5760:"4 Days", 7200:"5 Days", 8640:"6 Days", 10080:"1 Week", 20160:"2 Weeks", 30240:"3 Weeks", 40320:"4 Weeks", 50400:"5 Weeks", 60480:"6 Weeks"]
-
-@Field static Map powerFailureRecoveryOptions = [0:"Turn Off", 1:"Turn On", 2:"Restore Last State"]
-
-@Field static Map noYesOptions = [0:"No", 1:"Yes"]
-
-@Field static Map dimmingDurationOptions1 = [0:"Disabled", 1:"1 Second", 2:"2 Seconds", 3:"3 Seconds", 4:"4 Seconds", 5:"5 Seconds", 6:"6 Seconds", 7:"7 Seconds", 8:"8 Seconds", 9:"9 Seconds", 10:"10 Seconds"]
-
-@Field static Map dimmingDurationOptions = [1:"1 Second", 2:"2 Seconds", 3:"3 Seconds", 4:"4 Seconds", 5:"5 Seconds", 6:"6 Seconds", 7:"7 Seconds", 8:"8 Seconds", 9:"9 Seconds", 10:"10 Seconds"]
-
-@Field static Map brightnessOptions = [0:"Disabled", 1:"1%", 5:"5%", 10:"10%", 15:"15%", 20:"20%", 25:"25%", 30:"30%", 35:"35%", 40:"40%", 45:"45%", 50:"50%", 55:"55%",60:"60%", 65:"65%", 70:"70%", 75:"75%", 80:"80%", 85:"85%", 90:"90%", 95:"95%", 99:"99%"]
-
-@Field static Map temperatureReportTimeOptions = [1:"1 Minute", 2:"2 Minutes", 3:"3 Minutes", 4:"4 Minutes", 5:"5 Minutes", 6:"6 Minutes", 7:"7 Minutes", 8:"8 Minutes", 9:"9 Minutes", 10:"10 Minutes", 15:"15 Minutes", 20:"20 Minutes", 25:"25 Minutes", 30:"30 Minutes", 35:"35 Minutes", 40:"40 Minutes", 45:"45 Minutes", 50:"350 Minutes", 55:"55 Minutes",60:"60 Minutes"]
-
-@Field static Map temperatureReportThresholdOptions = [1:"1℃/1.8°F", 2:"2℃/3.6°F", 3:"3℃/5.4°F", 4:"4℃/7.2°F", 5:"5℃/9.0°F", 6:"6℃/10.8°F", 7:"7℃/12.6°F", 8:"8℃/14.4°F", 9:"8℃/16.2°F", 10:"10℃/18°F"]
-
 metadata {
     definition (
             name: "Min Smart Plug Dimmer",
             namespace: "sky-nie",
             author: "winnie",
-            mnmn: "SmartThings",
-            vid:"generic-dimmer-3",
+       //     mnmn: "SmartThings",
+       //     vid:"generic-dimmer-3",
             ocfDeviceType: "oic.d.smartplug"
     ) {
             capability "Actuator"
             capability "Sensor"
             capability "Switch"
+            capability "Temperature Measurement"
             capability "Switch Level"
             capability "Light"
             capability "Configuration"
             capability "Refresh"
             capability "Health Check"
-            capability "Temperature Measurement"
 
             attribute "firmwareVersion", "string"
             attribute "lastCheckIn", "string"
@@ -105,8 +62,6 @@ metadata {
 
             fingerprint mfr: "0312", prod: "FF00", model: "FF0D", deviceJoinName: "Minoston Dimmer Switch" //MP21ZD Minoston Mini Smart Plug Dimmer
 	}
-
-    simulator { }
 
 	tiles(scale: 2) {
 		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
@@ -120,6 +75,22 @@ metadata {
 				attributeState "level", action:"switch level.setLevel"
 			}
 		}
+
+        multiAttributeTile(name: "temperature", type: "generic", width: 6, height: 4, canChangeIcon: true) {
+            tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
+                attributeState "temperature", label: '${currentValue}°',
+                        backgroundColors:[
+                                [value: 31, color: "#153591"],
+                                [value: 44, color: "#1e9cbb"],
+                                [value: 59, color: "#90d2a7"],
+                                [value: 74, color: "#44b621"],
+                                [value: 84, color: "#f1d801"],
+                                [value: 95, color: "#d04e00"],
+                                [value: 96, color: "#bc2323"]
+                        ]
+            }
+        }
+
 		standardTile("refresh", "device.refresh", width: 2, height: 2) {
 			state "refresh", label:'Refresh', action: "refresh"
 		}
@@ -132,33 +103,56 @@ metadata {
 		valueTile("firmwareVersion", "device.firmwareVersion", decoration:"flat", width:3, height: 1) {
 			state "firmwareVersion", label:'Firmware ${currentValue}'
 		}
-		main "switch"
-		details(["switch", "refresh", "syncStatus", "sync", "firmwareVersion"])
+		valueTile("icon", "device.icon", inactiveLabel: false, decoration: "flat", width: 4, height: 1) {
+			state "default", label: '', icon: "https://inovelli.com/wp-content/uploads/Device-Handler/Inovelli-Device-Handler-Logo.png"
+		}
+		main "switch", "temperature"
+		details(["switch", "temperature", "refresh", "syncStatus", "sync", "firmwareVersion"])
 	}
+
+    simulator { }
+
     preferences {
         configParams.each {
-            createEnumInput("configParam${it.num}", "${it.name}:", it.value, it.options)
+            if (it.name) {
+                if (it.range) {
+                    getNumberInput(it)
+                }
+                else {
+                    getOptionsInput(it)
+                }
+            }
         }
+
+        input "debugOutput", "bool",
+                title: "Enable debug logging?",
+                defaultValue: true,
+                required: false
     }
 }
 
-private createEnumInput(name, title, defaultVal, options) {
-    input name, "enum",
-            title: title,
+private getOptionsInput(param) {
+    input "configParam${param.num}", "enum",
+            title: "${param.name}:",
             required: false,
-            defaultValue: defaultVal.toString(),
-            options: options
+            defaultValue: "${param.value}",
+            options: param.options
+}
+
+private getNumberInput(param) {
+    input "configParam${param.num}", "number",
+            title: "${param.name}:",
+            required: false,
+            defaultValue: "${param.value}",
+            range: param.range
 }
 
 def installed() {
     logDebug "installed()..."
-
     if (state.debugLoggingEnabled == null) {
         state.debugLoggingEnabled = true
-        state.createButtonEnabled = true
     }
-    def cmds = [ zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x01).format()]
-    response(cmds)
+    state.refreshConfig = true
 }
 
 def updated() {
@@ -168,12 +162,12 @@ def updated() {
         logDebug "updated()..."
 
         state.debugLoggingEnabled = (safeToInt(settings?.debugOutput) != 0)
-        state.createButtonEnabled = (safeToInt(settings?.createButton) != 0)
 
         initialize()
 
         runIn(5, executeConfigureCmds, [overwrite: true])
     }
+
     return []
 }
 
@@ -185,55 +179,8 @@ private initialize() {
     if (!device.currentValue("checkInterval")) {
         sendEvent(checkIntervalEvt)
     }
-
-    if (state.createButtonEnabled && !childDevices) {
-        try {
-            def child = addChildButton()
-            child?.sendEvent(checkIntervalEvt)
-        }
-        catch (ex) {
-            log.warn "Unable to create button device because the 'Child Button' DTH is not installed"
-        }
-    }
-    else if (!state.createButtonEnabled && childDevices) {
-        removeChildButton(childDevices[0])
-    }
 }
 
-private addChildButton() {
-    log.warn "Creating Button Device"
-
-    def child = addChildDevice(
-            "sky-nie",
-            "Child Button",
-            "${device.deviceNetworkId}-BUTTON",
-            device.getHub().getId(),
-            [
-                    completedSetup: true,
-                    isComponent: false,
-                    label: "${device.displayName}-Button",
-                    componentLabel: "${device.displayName}-Button"
-            ]
-    )
-
-    child?.sendEvent(name:"supportedButtonValues", value:JsonOutput.toJson(["pushed", "down","down_2x","up","up_2x"]), displayed:false)
-
-    child?.sendEvent(name:"numberOfButtons", value:1, displayed:false)
-
-    sendButtonEvent("pushed")
-
-    return child
-}
-
-private removeChildButton(child) {
-    try {
-        log.warn "Removing ${child.displayName}} "
-        deleteChildDevice(child.deviceNetworkId)
-    }
-    catch (e) {
-        log.error "Unable to remove ${child.displayName}!  Make sure that the device is not being used by any SmartApps."
-    }
-}
 
 def configure() {
     logDebug "configure()..."
@@ -256,112 +203,178 @@ def executeConfigureCmds() {
 
     def cmds = []
 
-    if (!device.currentValue("switch")) {
-        cmds << switchMultilevelGetCmd()
-    }
-
-    if (state.resyncAll || !device.currentValue("firmwareVersion")) {
-        cmds << versionGetCmd()
-    }
+//	cmds << sensorBinaryGetCmd()
+//	cmds << batteryGetCmd()
 
     configParams.each { param ->
         def storedVal = getParamStoredValue(param.num)
         def paramVal = param.value
-
-        if ((param == paddleControlParam) && state.createButtonEnabled && (param.value == togglePaddle)) {
-            log.warn "Only 'pushed', 'up_2x', and 'down_2x' button events are supported when Paddle Control is set to Toggle."
-        }
-
         if (state.resyncAll || ("${storedVal}" != "${paramVal}")) {
-            logDebug "Changing ${param.name}(#${param.num}) from ${storedVal} to ${paramVal}"
             cmds << configSetCmd(param, paramVal)
-            cmds << configGetCmd(param)
+            if (param.num == temperatureReportThresholdParam.num) {
+                cmds << "delay 3000"
+                cmds << sensorMultilevelGetCmd(tempSensorType)
+            }else{
+                cmds << configGetCmd(param)
+            }
         }
     }
 
-    state.resyncAll = false
-    if (cmds) {
-        sendCommands(delayBetween(cmds, 500))
-    }
-    return []
-}
-
-def ping() {
-    logDebug "ping()..."
-
-    return [ switchMultilevelGetCmd() ]
-}
-
-def on() {
-    logDebug "on()..."
-
-    return [ basicSetCmd(0xFF) ]
-}
-
-def off() {
-    logDebug "off()..."
-
-    return [ basicSetCmd(0x00) ]
-}
-
-def setLevel(level) {
-    logDebug "setLevel($level)..."
-    return setLevel(level, 1)
-}
-
-def setLevel(level, duration) {
-    logDebug "setLevel($level, $duration)..."
-    if (duration > 30) {
-        duration = 30
-    }
-    return [ switchMultilevelSetCmd(level, duration) ]
-}
-
-def refresh() {
-    logDebug "refresh()..."
-
-    refreshSyncStatus()
-
-    sendCommands([switchMultilevelGetCmd()])
+	state.resyncAll = false
+	if (cmds) {
+		sendCommands(delayBetween(cmds, 500))
+	}
+	return []
 }
 
 private sendCommands(cmds) {
-    if (cmds) {
-        def actions = []
-        cmds.each {
-            actions << new physicalgraph.device.HubAction(it)
+    def actions = []
+    cmds?.each {
+        actions << new physicalgraph.device.HubAction(it)
+    }
+    sendHubCommand(actions, 100)
+    return []
+}
+
+
+// Required for HealthCheck Capability, but doesn't actually do anything because this device sleeps.
+def ping() {
+	logDebug "ping()"	
+}
+
+
+// Forces the configuration to be resent to the device the next time it wakes up.
+def refresh() {
+    logForceWakeupMessage "The sensor data will be refreshed the next time the device wakes up."
+    state.lastBattery = null
+    if (!state.refreshSensors) {
+        state.refreshSensors = true
+    }
+    else {
+        state.refreshConfig = true
+    }
+    refreshSyncStatus()
+    return []
+}
+
+private logForceWakeupMessage(msg) {
+    logDebug "${msg}  You can force the device to wake up immediately by holding the z-button for 2 seconds."
+}
+
+def parse(String description) {
+    def result = []
+    try {
+        def cmd = zwave.parse(description, commandClassVersions)
+        if (cmd) {
+            result += zwaveEvent(cmd)
         }
-        sendHubCommand(actions)
+        else {
+            logDebug "Unable to parse description: $description"
+        }
+
+        sendEvent(name: "lastCheckIn", value: convertToLocalTimeString(new Date()), displayed: false)
+    }
+    catch (e) {
+        log.error "$e"
+    }
+    return result
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
+    def encapCmd = cmd.encapsulatedCommand(commandClassVersions)
+
+    def result = []
+    if (encapCmd) {
+        result += zwaveEvent(encapCmd)
+    }
+    else {
+        log.warn "Unable to extract encapsulated cmd from $cmd"
+    }
+    return result
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd) {
+    logTrace "SensorMultilevelReport: ${cmd}"
+
+    if (cmd.sensorValue != [255, 255]) { // Bug in beta device
+        switch (cmd.sensorType) {
+            case tempSensorType:
+                def unit = cmd.scale ? "F" : "C"
+                def temp = convertTemperatureIfNeeded(cmd.scaledSensorValue, unit, cmd.precision)
+
+                sendEvent(getEventMap("temperature", temp, true, null, getTemperatureScale()))
+                break
+            default:
+                logDebug "Unknown Sensor Type: ${cmd.sensorType}"
+        }
     }
     return []
 }
 
-private versionGetCmd() {
-    return secureCmd(zwave.versionV1.versionGet())
+def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd) {
+    logTrace "ConfigurationReport ${cmd}"
+
+    updateSyncingStatus()
+    runIn(4, refreshSyncStatus)
+
+    def param = configParams.find { it.num == cmd.parameterNumber }
+    if (param) {
+        def val = cmd.scaledConfigurationValue
+
+        logDebug "${param.name}(#${param.num}) = ${val}"
+        setParamStoredValue(param.num, val)
+    }
+    else {
+        logDebug "Parameter #${cmd.parameterNumber} = ${cmd.configurationValue}"
+    }
+    return []
+}
+private updateSyncingStatus() {
+    sendEventIfNew("syncStatus", "Syncing...", false)
 }
 
-private basicSetCmd(val) {
-    return secureCmd(zwave.basicV1.basicSet(value: val))
+def refreshSyncStatus() {
+    def changes = pendingChanges
+    sendEventIfNew("syncStatus", (changes ?  "${changes} Pending Changes" : "Synced"), false)
 }
 
-private switchMultilevelSetCmd(level, duration) {
-    def levelVal = validateRange(level, 99, 0, 99)
-
-    def durationVal = validateRange(duration, 1, 0, 100)
-
-    return secureCmd(zwave.switchMultilevelV3.switchMultilevelSet(dimmingDuration: durationVal, value: levelVal))
+def zwaveEvent(physicalgraph.zwave.Command cmd) {
+	logDebug "Ignored Command: $cmd"
+    return []
 }
 
-private switchMultilevelGetCmd() {
-    return secureCmd(zwave.switchMultilevelV3.switchMultilevelGet())
+private getEventMap(name, value, displayed=null, desc=null, unit=null) {
+    def isStateChange = (device.currentValue(name) != value)
+    displayed = (displayed == null ? isStateChange : displayed)
+    def eventMap = [
+            name: name,
+            value: value,
+            displayed: displayed,
+            isStateChange: isStateChange,
+            descriptionText: desc ?: "${device.displayName} ${name} is ${value}"
+    ]
+
+    if (unit) {
+        eventMap.unit = unit
+        eventMap.descriptionText = "${eventMap.descriptionText}${unit}"
+    }
+    if (displayed) {
+        logDebug "${eventMap.descriptionText}"
+    }
+    return eventMap
 }
 
-private configSetCmd(param, value) {
-    return secureCmd(zwave.configurationV1.configurationSet(parameterNumber: param.num, size: param.size, scaledConfigurationValue: value))
+private sensorMultilevelGetCmd(sensorType) {
+    def scale = (sensorType == tempSensorType) ? 0 : 1
+    return secureCmd(zwave.sensorMultilevelV5.sensorMultilevelGet(scale: scale, sensorType: sensorType))
 }
 
 private configGetCmd(param) {
     return secureCmd(zwave.configurationV1.configurationGet(parameterNumber: param.num))
+}
+
+private configSetCmd(param, value) {
+    return secureCmd(zwave.configurationV1.configurationSet(parameterNumber: param.num, size: param.size, scaledConfigurationValue: value))
 }
 
 private secureCmd(cmd) {
@@ -378,206 +391,26 @@ private secureCmd(cmd) {
     }
 }
 
-def parse(String description) {
-    def result = []
-    try {
-        def cmd = zwave.parse(description, commandClassVersions)
-        if (cmd) {
-            result += zwaveEvent(cmd)
-        }
-        else {
-            log.warn "Unable to parse: $description"
-        }
-
-        updateLastCheckIn()
-    }
-    catch (e) {
-        log.error "${e}"
-    }
-    return result
-}
-
-private updateLastCheckIn() {
-    if (!isDuplicateCommand(state.lastCheckInTime, 60000)) {
-        state.lastCheckInTime = new Date().time
-
-        def evt = [name: "lastCheckIn", value: convertToLocalTimeString(new Date()), displayed: false]
-
-        sendEvent(evt)
-
-        if (childDevices) {
-            childDevices*.sendEvent(evt)
-        }
-    }
-}
-
-private convertToLocalTimeString(dt) {
-    try {
-        def timeZoneId = location?.timeZone?.ID
-        if (timeZoneId) {
-            return dt.format("MM/dd/yyyy hh:mm:ss a", TimeZone.getTimeZone(timeZoneId))
-        }
-        else {
-            return "$dt"
-        }
-    }
-    catch (ex) {
-        return "$dt"
-    }
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
-    def encapsulatedCmd = cmd.encapsulatedCommand(commandClassVersions)
-
-    def result = []
-    if (encapsulatedCmd) {
-        result += zwaveEvent(encapsulatedCmd)
-    }
-    else {
-        log.warn "Unable to extract encapsulated cmd from $cmd"
-    }
-    return result
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd) {
-    logTrace "${cmd}"
-
-    updateSyncingStatus()
-    runIn(4, refreshSyncStatus)
-
-    def param = configParams.find { it.num == cmd.parameterNumber }
-    if (param) {
-        def val = cmd.scaledConfigurationValue
-        logDebug "${param.name}(#${param.num}) = ${val}"
-        setParamStoredValue(param.num, val)
-    }
-    else {
-        logDebug "Parameter #${cmd.parameterNumber} = ${cmd.scaledConfigurationValue}"
-    }
-    return []
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
-    logTrace "VersionReport: ${cmd}"
-
-    def subVersion = String.format("%02d", cmd.applicationSubVersion)
-    def fullVersion = "${cmd.applicationVersion}.${subVersion}"
-
-    sendEventIfNew("firmwareVersion", fullVersion)
-    return []
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
-    logTrace "${cmd}"
-    sendSwitchEvents(cmd.value, "physical")
-    return []
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelReport cmd) {
-    logTrace "${cmd}"
-    sendSwitchEvents(cmd.value, "digital")
-    return []
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd) {
-    log.debug "SensorMultilevelReport: $cmd"
-    def map = [:]
-    switch (cmd.sensorType) {
-        case 1:
-            map.name = "temperature"
-            def cmdScale = cmd.scale == 1 ? "F" : "C"
-            def realTemperature = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmdScale, cmd.precision)
-            map.value = getAdjustedTemp(realTemperature)
-            map.unit = getTemperatureScale()
-            log.debug "Temperature Report: $map.value"
-            break
-        default:
-            map.descriptionText = cmd.toString()
-            break
-    }
-
-    [createEvent(map)]
-}
-
-private sendSwitchEvents(rawVal, type) {
-    def oldSwitch = device.currentValue("switch")
-    def oldLevel = device.currentValue("level")
-
-    def switchVal = rawVal ? "on" : "off"
-
-    sendEventIfNew("switch", switchVal, true, type)
-
-    if (rawVal) {
-        sendEventIfNew("level", rawVal, true, type, "%")
-    }
-
-    def paddlesReversed = (paddleControlParam.value == reversePaddle)
-
-    if (state.createButtonEnabled && (type == "physical") && childDevices) {
-        if (paddleControlParam.value == togglePaddle) {
-            sendButtonEvent("pushed")
-        }
-        else {
-            def btnVal = ((rawVal && !paddlesReversed) || (!rawVal && paddlesReversed)) ? "up" : "down"
-
-            if ((oldSwitch == "on") && (btnVal == "up") && (oldLevel > rawVal)) {
-                btnVal = "down"
-            }
-
-            sendButtonEvent(btnVal)
-        }
-    }
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotification cmd){
-    if (state.lastSequenceNumber != cmd.sequenceNumber) {
-        state.lastSequenceNumber = cmd.sequenceNumber
-
-        logTrace "${cmd}"
-
-        def paddle = (cmd.sceneNumber == 1) ? "down" : "up"
-        def btnVal
-        switch (cmd.keyAttributes){
-            case 0:
-                btnVal = paddle
-                break
-            case 1:
-                logDebug "Button released not supported"
-                break
-            case 2:
-                logDebug "Button held not supported"
-                break
-            case 3:
-                btnVal = paddle + "_2x"
-                break
-        }
-
-        if (btnVal) {
-            sendButtonEvent(btnVal)
-        }
-    }
-    return []
-}
-
-private sendButtonEvent(value) {
-    def child = childDevices?.first()
-    if (child) {
-        childDevices[0].sendEvent(name: "button", value: value, data:[buttonNumber: 1], isStateChange: true)
-    }
-}
-
-def zwaveEvent(physicalgraph.zwave.Command cmd) {
-    logDebug "Unhandled zwaveEvent: $cmd"
-    return []
-}
-
-private updateSyncingStatus() {
-    sendEventIfNew("syncStatus", "Syncing...", false)
-}
-
-def refreshSyncStatus() {
-    def changes = pendingChanges
-    sendEventIfNew("syncStatus", (changes ?  "${changes} Pending Changes" : "Synced"), false)
+private getCommandClassVersions() {
+    [
+            0x20: 1,	// Basic
+            0x26: 3,	// Switch Multilevel
+            0x55: 1,	// Transport Service
+            0x59: 1,	// AssociationGrpInfo
+            0x5A: 1,	// DeviceResetLocally
+            0x31: 5,    // SENSOR_MULTILEVEL_V11
+            0x71: 3,	// NOTIFICATION_V8
+            0x6C: 1,	// Supervision
+            0x70: 1,	// Configuration
+            0x7A: 2,	// FirmwareUpdateMd
+            0x72: 2,	// ManufacturerSpecific
+            0x73: 1,	// Powerlevel
+            0x85: 2,	// Association
+            0x86: 1,	// Version (2)
+            0x8E: 2,	// Multi Channel Association
+            0x98: 1,	// Security S0
+            0x9F: 1	// Security S2
+    ]
 }
 
 private getPendingChanges() {
@@ -585,15 +418,19 @@ private getPendingChanges() {
 }
 
 private getParamStoredValue(paramNum) {
-    return safeToInt(state["configVal${paramNum}"] , null)
+	return safeToInt(state["configParam${paramNum}"] , null)
 }
 
 private setParamStoredValue(paramNum, value) {
-    state["configVal${paramNum}"] = value
+	state["configParam${paramNum}"] = value
 }
 
+// Sensor Types
+private getTempSensorType() { return 1 }
+
+// Configuration Parameters
 private getConfigParams() {
-    return [
+    [
             ledModeParam,
             autoOffIntervalParam,
             autoOnIntervalParam,
@@ -608,21 +445,20 @@ private getConfigParams() {
     ]
 }
 
-
 private getLedModeParam() {
 	return getParam(2, "LED Indicator Mode", 1, 0, ledModeOptions)
 }
 
 private getAutoOffIntervalParam() {
-	return getParam(4, "Auto Turn-Off Timer", 4, 0, autoOnOffIntervalOptions)
+	return getParam(4, "Auto Turn-Off Timer(0,Disabled; 1--60480 minutes)", 4, 0, null, "0...60480")
 }
 
 private getAutoOnIntervalParam() {
-	return getParam(6, "Auto Turn-On Timer", 4, 0, autoOnOffIntervalOptions)
+	return getParam(6, "Auto Turn-On Timer(0,Disabled; 1--60480 minutes)", 4, 0, null, "0...60480")
 }
 
 private getNightLightParam() {
-	return getParam(7, "Night Light Settings", 1, 2, nightLightOptions)
+	return getParam(7, "Night Light Settings(1,10%;2,20%,...10,100%)", 1, 2, null, "1...10")
 }
 
 private getPowerFailureRecoveryParam() {
@@ -630,11 +466,11 @@ private getPowerFailureRecoveryParam() {
 }
 
 private getPushDimmingDurationParam() {
-    return getParam(9, "Push Dimming Duration", 1, 2, dimmingDurationOptions1)
+    return getParam(9, "Push Dimming Duration(0,Disabled; 1--10 Seconds)", 1, 2, null, "0...10")
 }
 
 private getHoldDimmingDurationParam() {
-    return getParam(10, "Hold Dimming Duration", 1, 4, dimmingDurationOptions)
+    return getParam(10, "Hold Dimming Duration(1--10 Seconds)", 1, 4, null, "1...10")
 }
 
 private getMinimumBrightnessParam() {
@@ -646,21 +482,22 @@ private getMaximumBrightnessParam() {
 }
 
 private getTemperatureReportTimeParam() {
-    return getParam(13, "Temperature report time", 1, 1, temperatureReportTimeOptions)
+    return getParam(13, "Temperature report time(1--60 minutes)", 1, 1, null, "1...60")
 }
-
 
 private getTemperatureReportThresholdParam() {
     return getParam(14, "Temperature report threshold", 1, 5, temperatureReportThresholdOptions)
 }
 
-private getParam(num, name, size, defaultVal, options) {
+private getParam(num, name, size, defaultVal, options=null, range=null) {
     def val = safeToInt((settings ? settings["configParam${num}"] : null), defaultVal)
 
     def map = [num: num, name: name, size: size, value: val]
     if (options) {
+		map.valueName = options?.find { k, v -> "${k}" == "${val}" }?.value
         map.options = setDefaultOption(options, defaultVal)
     }
+	if (range) map.range = range
 
     return map
 }
@@ -672,6 +509,41 @@ private setDefaultOption(options, defaultVal) {
         }
         ["$k": "$v"]
     }
+}
+
+private static getBrightnessOptions() {
+    def options = [:]
+    options["0"] = "Disabled"
+    options["1"] = "1%"
+    for(def it = 5; it < 100; it+=5){
+        options["${it}"] = "${it}%"
+    }
+    options["99"] = "99%"
+    return options
+}
+
+private static getLedModeOptions() {
+    return [
+            "0":"Off When On", "1":"On When On", "2":"Always Off", "3":"Always On"
+    ]
+}
+
+private static getPowerFailureRecoveryOptions() {
+    return [
+            "0":"Turn Off", "1":"Turn On", "2":"Restore Last State"
+    ]
+}
+
+private static getTemperatureReportThresholdOptions() {
+    def options = [:]
+    options["1"] = "1℃/1.8°F"
+    def it2
+
+    (2..10).each {
+        it2 = it*1.8
+        options["${it}"] = "${it}℃/${it2}°F"
+    }
+    return options
 }
 
 private sendEventIfNew(name, value, displayed=true, type=null, unit="") {
@@ -711,16 +583,99 @@ private safeToInt(val, defaultVal=0) {
     return "${val}"?.isInteger() ? "${val}".toInteger() : defaultVal
 }
 
+private convertToLocalTimeString(dt) {
+	def timeZoneId = location?.timeZone?.ID
+	if (timeZoneId) {
+		return dt.format("MM/dd/yyyy hh:mm:ss a", TimeZone.getTimeZone(timeZoneId))
+	}
+	else {
+		return "$dt"
+	}
+}
+
 private isDuplicateCommand(lastExecuted, allowedMil) {
     !lastExecuted ? false : (lastExecuted + allowedMil > new Date().time)
 }
 
 private logDebug(msg) {
-    if (state.debugLoggingEnabled) {
+	if (settings?.debugOutput || settings?.debugOutput == null) {
         log.debug "$msg"
     }
 }
 
 private logTrace(msg) {
-    log.trace "$msg"
+	// log.trace "$msg"
+}
+
+
+def on() {
+    logDebug "on()..."
+
+    return [ basicSetCmd(0xFF) ]
+}
+
+def off() {
+    logDebug "off()..."
+
+    return [ basicSetCmd(0x00) ]
+}
+
+def setLevel(level) {
+    logDebug "setLevel($level)..."
+    return setLevel(level, 1)
+}
+
+def setLevel(level, duration) {
+    logDebug "setLevel($level, $duration)..."
+    if (duration > 30) {
+        duration = 30
+    }
+    return [ switchMultilevelSetCmd(level, duration) ]
+}
+
+private basicSetCmd(val) {
+    return secureCmd(zwave.basicV1.basicSet(value: val))
+}
+
+private switchMultilevelSetCmd(level, duration) {
+    def levelVal = validateRange(level, 99, 0, 99)
+
+    def durationVal = validateRange(duration, 1, 0, 100)
+
+    return secureCmd(zwave.switchMultilevelV3.switchMultilevelSet(dimmingDuration: durationVal, value: levelVal))
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
+    logTrace "VersionReport: ${cmd}"
+
+    def subVersion = String.format("%02d", cmd.applicationSubVersion)
+    def fullVersion = "${cmd.applicationVersion}.${subVersion}"
+
+    sendEventIfNew("firmwareVersion", fullVersion)
+    return []
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
+    logTrace "${cmd}"
+    sendSwitchEvents(cmd.value, "physical")
+    return []
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelReport cmd) {
+    logTrace "${cmd}"
+    sendSwitchEvents(cmd.value, "digital")
+    return []
+}
+
+private sendSwitchEvents(rawVal, type) {
+    def oldSwitch = device.currentValue("switch")
+    def oldLevel = device.currentValue("level")
+
+    def switchVal = rawVal ? "on" : "off"
+
+    sendEventIfNew("switch", switchVal, true, type)
+
+    if (rawVal) {
+        sendEventIfNew("level", rawVal, true, type, "%")
+    }
 }
