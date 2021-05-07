@@ -1,5 +1,7 @@
 /**
- *     Minoston Door/Window Sensor
+ *     Minoston Door/Window Sensor v1.0.0
+ *
+ *  	Models: MSE30Z/ZWS713
  *
  *  Author:
  *   winnie (sky-nie)
@@ -8,12 +10,11 @@
  *
  *  Changelog:
  *
- *    1.0.0 (04/23/2021)
+ *    1.0.0 (04/26/2021)
  *      - Initial Release
  *
  * Reference：
- *    https://github.com/SmartThingsCommunity/SmartThingsPublic/blob/master/devicetypes/smartthings/zwave-door-window-sensor.src/zwave-door-window-sensor.groovy
- *    https://github.com/SmartThingsCommunity/SmartThingsPublic/blob/master/devicetypes/smartthings/smartsense-temp-humidity-sensor.src/smartsense-temp-humidity-sensor.groovy
+ *   https://community.smartthings.com/t/release-aeotec-trisensor/140556?u=krlaframboise
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -25,50 +26,33 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
-
 metadata {
 	definition(
 			name: "Minoston Door/Window Sensor",
 			namespace: "sky-nie",
 			author: "winnie",
 			ocfDeviceType: "x.com.st.d.sensor.contact",
-			runLocally: true,
-			minHubCoreVersion: '000.017.0012',
-			executeCommandsLocally: false,
+		//	runLocally: true,
+		//	minHubCoreVersion: '000.017.0012',
+		//	executeCommandsLocally: false,
 			genericHandler: "Z-Wave"
 	) {
-			capability "Contact Sensor"
-			capability "Sensor"
-			capability "Battery"
-			capability "Configuration"
-			capability "Health Check"
-			capability "Refresh"
-			capability "Temperature Measurement"
-			capability "Relative Humidity Measurement"
-    }
+		capability "Sensor"
+		capability "Contact Sensor"
+		capability "Temperature Measurement"
+		capability "Relative Humidity Measurement"
+		capability "Battery"
+		capability "Configuration"
+		capability "Refresh"
+		capability "Health Check"
 
-	// simulator metadata
-	simulator {
-		// status messages
-		status "open": "command: 2001, payload: FF"
-		status "closed": "command: 2001, payload: 00"
-		status "wake up": "command: 8407, payload: "
-		status 'H 40': 'catchall: 0104 FC45 01 01 0140 00 D9B9 00 04 C2DF 0A 01 000021780F'
-		status 'H 45': 'catchall: 0104 FC45 01 01 0140 00 D9B9 00 04 C2DF 0A 01 0000218911'
-		status 'H 57': 'catchall: 0104 FC45 01 01 0140 00 4E55 00 04 C2DF 0A 01 0000211316'
-		status 'H 53': 'catchall: 0104 FC45 01 01 0140 00 20CD 00 04 C2DF 0A 01 0000219814'
-		status 'H 43': 'read attr - raw: BF7601FC450C00000021A410, dni: BF76, endpoint: 01, cluster: FC45, size: 0C, attrId: 0000, result: success, encoding: 21, value: 10a4'
+		attribute "firmwareVersion", "string"
+		attribute "lastCheckIn", "string"
+		attribute "syncStatus", "string"
+
+		//fingerprint mfr: "0312", prod: "0713", model: "D100", deviceJoinName: "Minoston Temp Humidity Sensor" //MSE30Z/ZWS713
 	}
 
-	preferences {
-		input "tempOffset", "number", title: "Temperature offset", description: "Select how many degrees to adjust the temperature.", range: "-100..100", displayDuringSetup: false
-		input "humidityOffset", "number", title: "Humidity offset", description: "Enter a percentage to adjust the humidity.", range: "*..*", displayDuringSetup: false
-		input "reportInterval", "enum", title: "Report Interval", description: "How often the device should report in minutes",
-			options: ["8 minutes", "15 minutes", "30 minutes", "1 hour", "6 hours", "12 hours", "18 hours", "24 hours"]
-        input "resetMinMax", "bool", title: "Reset Humidity min and max", required: false, displayDuringSetup: false
-	}
-
-	// UI tile definitions
 	tiles(scale: 2) {
 		multiAttributeTile(name: "contact", type: "generic", width: 6, height: 4) {
 			tileAttribute("device.contact", key: "PRIMARY_CONTROL") {
@@ -80,7 +64,7 @@ metadata {
 		multiAttributeTile(name: "temperature", type: "generic", width: 6, height: 4, canChangeIcon: true) {
 			tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
 				attributeState "temperature", label: '${currentValue}°',
-						backgroundColors: [
+						backgroundColors:[
 								[value: 31, color: "#153591"],
 								[value: 44, color: "#1e9cbb"],
 								[value: 59, color: "#90d2a7"],
@@ -95,70 +79,664 @@ metadata {
 			state "humidity", label: '${currentValue}% humidity', unit: ""
 		}
 
-
 		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "battery", label: '${currentValue}% battery', unit: ""
 		}
 
-		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "default", action: "refresh.refresh", icon: "st.secondary.refresh"
+		standardTile("refresh", "device.refresh", width: 2, height: 2) {
+			state "refresh", label:'Refresh', action: "refresh"
+		}
+		valueTile("syncStatus", "device.syncStatus", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state "syncStatus", label:'${currentValue}'
 		}
 
+		standardTile("sync", "device.configure", width: 2, height: 2) {
+			state "default", label: 'Sync', action: "configure"
+		}
+		valueTile("firmwareVersion", "device.firmwareVersion", decoration:"flat", width:3, height: 1) {
+			state "firmwareVersion", label:'Firmware ${currentValue}'
+		}
+		valueTile("icon", "device.icon", inactiveLabel: false, decoration: "flat", width: 4, height: 1) {
+			state "default", label: '', icon: "https://inovelli.com/wp-content/uploads/Device-Handler/Inovelli-Device-Handler-Logo.png"
+		}
 		main "contact", "temperature", "humidity"
-		details(["contact", "temperature", "humidity", "battery", "refresh"])
+		details(["contact", "temperature", "humidity", "battery", "refresh", "syncStatus", "sync", "firmwareVersion"])
+	}
+
+	simulator { }
+	
+	preferences {
+		configParams.each {
+			if (it.name) {
+				if (it.range) {
+					getNumberInput(it)
+				}
+				else {
+					getOptionsInput(it)
+				}
+			}
+		}
 	}
 }
 
-private getCommandClassVersions() {
-	[0x20: 1, 0x25: 1, 0x30: 1, 0x31: 5, 0x80: 1, 0x84: 1, 0x71: 3, 0x9C: 1]
+private getOptionsInput(param) {
+	input "configParam${param.num}", "enum",
+			title: "${param.name}:",
+			required: false,
+			defaultValue: "${param.value}",
+			options: param.options
 }
 
-def parse(String description) {
-	def result = null
-	if (description.startsWith("Err 106")) {
-		if ((zwaveInfo.zw == null && state.sec != 0) || zwaveInfo?.zw?.contains("s")) {
-			log.debug description
-		} else {
-			result = createEvent(
-				descriptionText: "This sensor failed to complete the network security key exchange. If you are unable to control it via SmartThings, you must remove it from your network and add it again.",
-				eventType: "ALERT",
-				name: "secureInclusion",
-				value: "failed",
-				isStateChange: true,
-			)
-		}
-	} else if (description != "updated") {
-		def cmd = zwave.parse(description, commandClassVersions)
-		if (cmd) {
-			result = zwaveEvent(cmd)
-		}
-	}
-	log.debug "parsed '$description' to $result"
-	return result
+private getNumberInput(param) {
+	input "configParam${param.num}", "number",
+			title: "${param.name}:",
+			required: false,
+			defaultValue: "${param.value}",
+			range: param.range
 }
 
 def installed() {
-	// Device-Watch simply pings if no device events received for 482min(checkInterval)
-	sendEvent(name: "checkInterval", value: 2 * 4 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-	// this is the nuclear option because the device often goes to sleep before we can poll it
-	sendEvent(name: "contact", value: "open", descriptionText: "$device.displayName is open")
-	sendEvent(name: "battery", unit: "%", value: 100)
-	sendEvent(name: "tamper", value: "clear")
-	response(initialPoll())
+	logDebug "installed()..."
+	state.refreshConfig = true
 }
 
 def updated() {
-	// Device-Watch simply pings if no device events received for 482min(checkInterval)
-	sendEvent(name: "checkInterval", value: 2 * 4 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	if (!isDuplicateCommand(state.lastUpdated, 5000)) {
+		state.lastUpdated = new Date().time
+
+		logDebug "updated()..."
+
+		initialize()
+
+		runIn(5, executeConfigureCmds, [overwrite: true])
+	}
+
+	return []
 }
 
-def configure() {
-	//Recessed Door Sensor 7 - Enable Binary Sensor Report for S2 Authenticated
-	if (zwaveInfo.mfr == "0371" || zwaveInfo.model == "00BB") {
-		result << response(command(zwave.configurationV1.configurationSet(parameterNumber: 1, size: 1, scaledConfigurationValue: 1)))
-		result
+private initialize() {
+	def checkInterval = ((60 * 60 * 3) + (5 * 60))
+
+	def checkIntervalEvt = [name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"]]
+
+	if (!device.currentValue("checkInterval")) {
+		sendEvent(checkIntervalEvt)
 	}
 }
+
+
+def configure() {
+	logDebug "configure()..."
+
+	if (state.resyncAll == null) {
+		state.resyncAll = true
+		runIn(8, executeConfigureCmds, [overwrite: true])
+	}
+	else {
+		if (!pendingChanges) {
+			state.resyncAll = true
+		}
+		executeConfigureCmds()
+	}
+	return []
+}
+
+def executeConfigureCmds() {
+	runIn(6, refreshSyncStatus)
+
+	def cmds = []
+
+//	cmds << sensorBinaryGetCmd()
+//	cmds << batteryGetCmd()
+
+	configParams.each { param ->
+		def storedVal = getParamStoredValue(param.num)
+		def paramVal = param.value
+		if (state.resyncAll || ("${storedVal}" != "${paramVal}")) {
+			cmds << configSetCmd(param, paramVal)
+			if (param.num == minTemperatureOffsetParam.num) {
+				cmds << "delay 3000"
+				cmds << sensorMultilevelGetCmd(tempSensorType)
+			}
+			else if (param.num == minHumidityOffsetParam.num) {
+				cmds << "delay 3000"
+				cmds << sensorMultilevelGetCmd(lightSensorType)
+			}else{
+				cmds << configGetCmd(param)
+			}
+		}
+	}
+
+	state.resyncAll = false
+	if (cmds) {
+		sendCommands(delayBetween(cmds, 500))
+	}
+	return []
+}
+
+private getConfigCmds() {
+	def cmds = []
+	configParams.each { param ->
+		def storedVal = getParamStoredValue(param.num)
+		if (state.refreshConfig) {
+			cmds << configGetCmd(param)
+		}
+		else if ("${storedVal}" != "${param.value}") {
+			def paramVal = param.value
+			logDebug "Changing ${param.name}(#${param.num}) from ${storedVal} to ${paramVal}"
+			cmds << configSetCmd(param, paramVal)
+
+			if (param.num == minTemperatureOffsetParam.num) {
+				cmds << "delay 3000"
+				cmds << sensorMultilevelGetCmd(tempSensorType)
+			}
+			else if (param.num == minHumidityOffsetParam.num) {
+				cmds << "delay 3000"
+				cmds << sensorMultilevelGetCmd(lightSensorType)
+			}else{
+				cmds << configGetCmd(param)
+			}
+		}
+	}
+	state.refreshConfig = false
+	return cmds
+}
+
+private sendCommands(cmds) {
+	def actions = []
+	cmds?.each {
+		actions << new physicalgraph.device.HubAction(it)
+	}
+	sendHubCommand(actions, 100)
+	return []
+}
+
+
+// Required for HealthCheck Capability, but doesn't actually do anything because this device sleeps.
+def ping() {
+	logDebug "ping()"
+}
+
+
+// Forces the configuration to be resent to the device the next time it wakes up.
+def refresh() {
+	logForceWakeupMessage "The sensor data will be refreshed the next time the device wakes up."
+	state.lastBattery = null
+	if (!state.refreshSensors) {
+		state.refreshSensors = true
+	}
+	else {
+		state.refreshConfig = true
+	}
+	refreshSyncStatus()
+	return []
+}
+
+private logForceWakeupMessage(msg) {
+	logDebug "${msg}  You can force the device to wake up immediately by holding the z-button for 2 seconds."
+}
+
+
+def parse(String description) {
+	def result = []
+	try {
+		def cmd = zwave.parse(description, commandClassVersions)
+		if (cmd) {
+			result += zwaveEvent(cmd)
+		}
+		else {
+			logDebug "Unable to parse description: $description"
+		}
+
+		sendEvent(name: "lastCheckIn", value: convertToLocalTimeString(new Date()), displayed: false)
+	}
+	catch (e) {
+		log.error "$e"
+	}
+	return result
+}
+
+
+def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
+	def encapCmd = cmd.encapsulatedCommand(commandClassVersions)
+
+	def result = []
+	if (encapCmd) {
+		result += zwaveEvent(encapCmd)
+	}
+	else {
+		log.warn "Unable to extract encapsulated cmd from $cmd"
+	}
+	return result
+}
+
+
+def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
+	logDebug "Device Woke Up"
+
+	def cmds = []
+	if (state.refreshConfig || pendingChanges > 0) {
+		cmds += getConfigCmds()
+	}
+
+	if (canReportBattery()) {
+		cmds << batteryGetCmd()
+	}
+
+	if (state.refreshSensors) {
+		cmds += [
+				sensorBinaryGetCmd(),
+				sensorMultilevelGetCmd(tempSensorType),
+				sensorMultilevelGetCmd(lightSensorType)
+		]
+		state.refreshSensors = false
+	}
+
+	if (cmds) {
+		cmds = delayBetween(cmds, 1000)
+		cmds << "delay 3000"
+	}
+	cmds << wakeUpNoMoreInfoCmd()
+	return response(cmds)
+}
+
+
+def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
+	def val = (cmd.batteryLevel == 0xFF ? 1 : cmd.batteryLevel)
+	if (val > 100) {
+		val = 100
+	}
+	else if (val < 1) {
+		val = 1
+	}
+	state.lastBattery = new Date().time
+
+	logDebug "Battery ${val}%"
+	sendEvent(getEventMap("battery", val, null, null, "%"))
+	return []
+}
+
+
+def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd) {
+	logTrace "SensorMultilevelReport: ${cmd}"
+
+	if (cmd.sensorValue != [255, 255]) { // Bug in beta device
+		switch (cmd.sensorType) {
+			case tempSensorType:
+				def unit = cmd.scale ? "F" : "C"
+				def temp = convertTemperatureIfNeeded(cmd.scaledSensorValue, unit, cmd.precision)
+
+				sendEvent(getEventMap("temperature", temp, true, null, getTemperatureScale()))
+				break
+
+			case lightSensorType:
+				sendEvent(getEventMap( "humidity", cmd.scaledSensorValue, true, null, "%"))
+				break
+			default:
+				logDebug "Unknown Sensor Type: ${cmd.sensorType}"
+		}
+	}
+	return []
+}
+
+
+def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd) {
+	logTrace "ConfigurationReport ${cmd}"
+
+	updateSyncingStatus()
+	runIn(4, refreshSyncStatus)
+
+	def param = configParams.find { it.num == cmd.parameterNumber }
+	if (param) {
+		def val = cmd.scaledConfigurationValue
+
+		logDebug "${param.name}(#${param.num}) = ${val}"
+		setParamStoredValue(param.num, val)
+	}
+	else {
+		logDebug "Parameter #${cmd.parameterNumber} = ${cmd.configurationValue}"
+	}
+	return []
+}
+private updateSyncingStatus() {
+	sendEventIfNew("syncStatus", "Syncing...", false)
+}
+
+def refreshSyncStatus() {
+	def changes = pendingChanges
+	sendEventIfNew("syncStatus", (changes ?  "${changes} Pending Changes" : "Synced"), false)
+}
+
+
+def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
+	logTrace "NotificationReport: $cmd"
+	def result = []
+
+	if (cmd.notificationType == 0x06 && cmd.event == 0x16) {
+		result << sensorValueEvent(1)
+	} else if (cmd.notificationType == 0x06 && cmd.event == 0x17) {
+		result << sensorValueEvent(0)
+	} else if (cmd.notificationType == 0x07) {
+		if (cmd.event == 0x00) {
+			result << createEvent(descriptionText: "$device.displayName covering was restored", isStateChange: true)
+			cmds = [zwave.batteryV1.batteryGet(), zwave.wakeUpV1.wakeUpNoMoreInformation()]
+			result << response(commands(cmds, 1000))
+		} else if (cmd.event == 0x01 || cmd.event == 0x02) {
+			result << sensorValueEvent(1)
+		} else if (cmd.event == 0x03) {
+			result << createEvent(descriptionText: "$device.displayName covering was removed", isStateChange: true)
+		}
+	} else if (cmd.notificationType) {
+		def text = "Notification $cmd.notificationType: event ${([cmd.event] + cmd.eventParameter).join(", ")}"
+		result << createEvent(name: "notification$cmd.notificationType", value: "$cmd.event", descriptionText: text, displayed: false)
+	} else {
+		def value = cmd.v1AlarmLevel == 255 ? "active" : cmd.v1AlarmLevel ?: "inactive"
+		result << createEvent(name: "alarm $cmd.v1AlarmType", value: value, displayed: false)
+	}
+
+	result
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.sensorbinaryv2.SensorBinaryReport cmd) {
+	logTrace "SensorBinaryReport: $cmd"
+	def map = [:]
+	map.value = cmd.sensorValue ? "open" : "closed"
+	map.name = "contact"
+	if (map.value == "open") {
+		map.descriptionText = "${device.displayName} is open"
+	}
+	else {
+		map.descriptionText = "${device.displayName} is closed"
+	}
+	createEvent(map)
+}
+
+void zwaveEvent(physicalgraph.zwave.commands.indicatorv1.IndicatorReport cmd) {
+	logTrace "${cmd}"
+}
+
+def zwaveEvent(physicalgraph.zwave.Command cmd) {
+	logDebug "Ignored Command: $cmd"
+	return []
+}
+
+private getEventMap(name, value, displayed=null, desc=null, unit=null) {
+	def isStateChange = (device.currentValue(name) != value)
+	displayed = (displayed == null ? isStateChange : displayed)
+	def eventMap = [
+			name: name,
+			value: value,
+			displayed: displayed,
+			isStateChange: isStateChange,
+			descriptionText: desc ?: "${device.displayName} ${name} is ${value}"
+	]
+
+	if (unit) {
+		eventMap.unit = unit
+		eventMap.descriptionText = "${eventMap.descriptionText}${unit}"
+	}
+	if (displayed) {
+		logDebug "${eventMap.descriptionText}"
+	}
+	return eventMap
+}
+
+
+private wakeUpNoMoreInfoCmd() {
+	return secureCmd(zwave.wakeUpV1.wakeUpNoMoreInformation())
+}
+
+private batteryGetCmd() {
+	return secureCmd(zwave.batteryV1.batteryGet())
+}
+
+private sensorBinaryGetCmd() {
+	return secureCmd(zwave.sensorBinaryV2.sensorBinaryGet())
+}
+
+private sensorMultilevelGetCmd(sensorType) {
+	def scale = (sensorType == tempSensorType) ? 0 : 1
+	return secureCmd(zwave.sensorMultilevelV5.sensorMultilevelGet(scale: scale, sensorType: sensorType))
+}
+
+private configGetCmd(param) {
+	return secureCmd(zwave.configurationV1.configurationGet(parameterNumber: param.num))
+}
+
+private configSetCmd(param, value) {
+	return secureCmd(zwave.configurationV1.configurationSet(parameterNumber: param.num, size: param.size, scaledConfigurationValue: value))
+}
+
+private secureCmd(cmd) {
+	try {
+		if (zwaveInfo?.zw?.contains("s") || ("0x98" in device?.rawDescription?.split(" "))) {
+			return zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+		}
+		else {
+			return cmd.format()
+		}
+	}catch (ex) {
+		return cmd.format()
+	}
+}
+
+
+private static getCommandClassVersions() {
+	[
+			0x30: 2,  // SensorBinary
+			0x31: 5,  // SensorMultilevel
+			0x55: 1,  // TransportServices
+			0x59: 1,  // AssociationGrpInfo
+			0x5A: 1,  // DeviceResetLocally
+			0x5E: 2,  // ZwaveplusInfo
+			0x6C: 1,  // Supervision
+			0x70: 1,  // Configuration
+			0x71: 3,  // Notification
+			0x72: 2,  // ManufacturerSpecific
+			0x73: 1,  // Powerlevel
+			0x7A: 2,  // FirmwareUpdateMd
+			0x80: 1,  // Battery
+			0x84: 1,  // WakeUp
+			0x85: 2,  // Association
+			0x86: 1,  // Version
+			0x8E: 2,  // MultChannelAssociation
+			0x87: 1,  // Indicator
+			0x9F: 1   // Security 2
+	]
+}
+
+
+private canReportBattery() {
+	return state.refreshSensors || (!isDuplicateCommand(state.lastBattery, (12 * 60 * 60 * 1000)))
+}
+
+private getPendingChanges() {
+	return configParams.count { "${it.value}" != "${getParamStoredValue(it.num)}" }
+}
+
+private getParamStoredValue(paramNum) {
+	return safeToInt(state["configParam${paramNum}"] , null)
+}
+
+private setParamStoredValue(paramNum, value) {
+	state["configParam${paramNum}"] = value
+}
+
+
+// Sensor Types
+private static getTempSensorType() { return 1 }
+private static getLightSensorType() { return 5 }
+
+
+// Configuration Parameters
+private getConfigParams() {
+	[
+			batteryReportThresholdParam,
+			lowBatteryAlarmReportParam,
+			sensorModeWhenClosedParam,
+			delayReportSecondsWhenClosedParam,
+			delayReportSecondsWhenOpenedParam,
+			minTemperatureOffsetParam,
+			minHumidityOffsetParam,
+			temperatureUpperWatermarkParam,
+			temperatureLowerWatermarkParam,
+			humidityUpperWatermarkParam,
+			humidityLowerWatermarkParam,
+			switchTemperatureUnitParam,
+			associationGroupSettingParam
+	]
+}
+
+private getBatteryReportThresholdParam() {
+	return getParam(1, "Battery report threshold\n(1% - 20%)", 1, 10, null,"1..20")
+}
+
+private getLowBatteryAlarmReportParam() {
+	return getParam(2, "Low battery alarm report\n(5% - 20%)", 1, 5, null, "5..20")
+}
+
+private getSensorModeWhenClosedParam() {
+	return getParam(3, "State of the sensor when the magnet closes the reed", 1, 0, sensorModeWhenCloseOptions)
+}
+
+private getDelayReportSecondsWhenClosedParam() {
+	return getParam(4, "Delay in seconds with ON command report(door closed)", 2, 0, null, "0..3600")
+}
+
+private getDelayReportSecondsWhenOpenedParam() {
+	return getParam(5, "Delay in seconds with OFF command report(door open)", 2, 0, null, "0..3600")
+}
+
+private getMinTemperatureOffsetParam() {
+	return getParam(6, "Minimum Temperature change to report", 1, 3, minTemperatureOffsetOptions)
+}
+
+private getMinHumidityOffsetParam() {
+	return getParam(7, "Minimum Humidity change to report\n(5% - 20%)", 1, 10, null, "5..20")
+}
+
+private getTemperatureUpperWatermarkParam() {
+	return getParam(8, "Temperature Upper Watermark value\n(0,Disabled; 1℃/33.8°F-50℃/122.0°F)", 2, 0, null, "0..50")
+}
+
+private getTemperatureLowerWatermarkParam() {
+	return getParam(9, "Temperature Lower Watermark value\n(0,Disabled; 1℃/33.8°F-50℃/122.0°F)", 2, 0, null, "0..50")
+}
+
+private getHumidityUpperWatermarkParam() {
+	return getParam(10, "Humidity Upper Watermark value\n(0,Disabled; 1%-100%)", 1, 0, null, "0..100")
+}
+
+private getHumidityLowerWatermarkParam() {
+	return getParam(11, "Humidity Lower Watermark value\n(0,Disabled; 1%-100%)", 1, 0, null, "0..100")
+}
+
+private getSwitchTemperatureUnitParam() {
+	return getParam(12, "Switch the unit of Temperature report", 1, 1,  switchTemperatureUnitOptions)
+}
+
+private getAssociationGroupSettingParam() {
+	return getParam(13, "Association Group 2 Setting", 1, 1, [0:"Disable completely",
+															  1:"Send Basic SET 0xFF when Magnet is away,and send Basic SET 0x00 when Magnet is near.",
+															  2:"Send Basic SET 0x00 when Magnet is away,and send Basic SET 0xFF when Magnet is near",
+															  3:"Only send Basic SET 0xFF when Magnet is away",
+															  4:"Only send Basic SET 0x00 when Magnet is near",
+															  5:"Only send Basic SET 0x00 when Magnet is away",
+															  6:"Only send Basic SET 0xFF when Magnet is near"
+	])
+}
+
+private getParam(num, name, size, defaultVal, options=null, range=null) {
+	def val = safeToInt((settings ? settings["configParam${num}"] : null), defaultVal)
+
+	def map = [num: num, name: name, size: size, value: val]
+	if (options) {
+		map.valueName = options?.find { k, v -> "${k}" == "${val}" }?.value
+		map.options = setDefaultOption(options, defaultVal)
+	}
+	if (range) map.range = range
+
+	return map
+}
+
+private static setDefaultOption(options, defaultVal) {
+	return options?.collectEntries { k, v ->
+		if ("${k}" == "${defaultVal}") {
+			v = "${v} [DEFAULT]"
+		}
+		["$k": "$v"]
+	}
+}
+
+// Setting Options
+private static getSwitchTemperatureUnitOptions() {
+	return [
+			"0":"Celsius",
+			"1":"Fahrenheit"
+	]
+}
+
+private static getSensorModeWhenCloseOptions() {
+	return [
+			"0":"door/window closed",
+			"1":"door/window opened"
+	]
+}
+
+private static getMinTemperatureOffsetOptions() {
+	def options = [:]
+	options["1"] = "1℃/1.8°F"
+	def it1, it2
+
+	(2..9).each {
+		it1 = (it + 1)*0.5
+		it2 = (it + 1)*0.9
+		options["${it}"] = "${it1}℃/${it2}°F"
+	}
+	return options
+}
+
+private sendEventIfNew(name, value, displayed=true, type=null, unit="") {
+	def desc = "${name} is ${value}${unit}"
+	if (device.currentValue(name) != value) {
+		logDebug(desc)
+
+		def evt = [name: name, value: value, descriptionText: "${device.displayName} ${desc}", displayed: displayed]
+
+		if (type) {
+			evt.type = type
+		}
+		if (unit) {
+			evt.unit = unit
+		}
+		sendEvent(evt)
+	}
+	else {
+		logTrace(desc)
+	}
+}
+
+//def ledIndicatorOn() {
+//	return delayBetween([
+//			indicatorSetCmd(0xFF),
+//			indicatorGetCmd()
+//	], 300)
+//}
+//
+//def ledIndicatorOff() {
+//	return delayBetween([
+//			indicatorSetCmd(0x00),
+//			indicatorGetCmd()
+//	], 300)
+//}
+//
+//private String indicatorGetCmd() {
+//	return secureCmd(zwave.indicatorV1.indicatorGet())
+//}
+//
+//private String indicatorSetCmd(int value) {
+//	return secureCmd(zwave.indicatorV1.indicatorSet(value: value))
+//}
 
 def sensorValueEvent(value) {
 	if (value) {
@@ -168,238 +746,28 @@ def sensorValueEvent(value) {
 	}
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
-	sensorValueEvent(cmd.value)
+private static safeToInt(val, defaultVal=0) {
+	return "${val}"?.isInteger() ? "${val}".toInteger() : defaultVal
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
-	sensorValueEvent(cmd.value)
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd) {
-	sensorValueEvent(cmd.value)
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.sensorbinaryv1.SensorBinaryReport cmd) {
-	sensorValueEvent(cmd.sensorValue)
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.sensoralarmv1.SensorAlarmReport cmd) {
-	sensorValueEvent(cmd.sensorState)
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
-	def result = []
-	if (cmd.notificationType == 0x06 && cmd.event == 0x16) {
-		result << sensorValueEvent(1)
-	} else if (cmd.notificationType == 0x06 && cmd.event == 0x17) {
-		result << sensorValueEvent(0)
-	} else if (cmd.notificationType == 0x07) {
-		if (cmd.v1AlarmType == 0x07) {  // special case for nonstandard messages from Monoprice door/window sensors
-			result << sensorValueEvent(cmd.v1AlarmLevel)
-		} else if (cmd.event == 0x00) {
-			result << createEvent(name: "tamper", value: "clear")
-		} else if (cmd.event == 0x01 || cmd.event == 0x02) {
-			result << sensorValueEvent(1)
-		} else if (cmd.event == 0x03) {
-			runIn(10, clearTamper, [overwrite: true, forceForLocallyExecuting: true])
-			result << createEvent(name: "tamper", value: "detected", descriptionText: "$device.displayName was tampered")
-			if (!state.MSR) result << response(command(zwave.manufacturerSpecificV2.manufacturerSpecificGet()))
-		} else if (cmd.event == 0x05 || cmd.event == 0x06) {
-			result << createEvent(descriptionText: "$device.displayName detected glass breakage", isStateChange: true)
-		} else if (cmd.event == 0x07) {
-			if (!state.MSR) result << response(command(zwave.manufacturerSpecificV2.manufacturerSpecificGet()))
-			result << createEvent(name: "motion", value: "active", descriptionText: "$device.displayName detected motion")
-		}
-	} else if (cmd.notificationType) {
-		def text = "Notification $cmd.notificationType: event ${([cmd.event] + cmd.eventParameter).join(", ")}"
-		result << createEvent(name: "notification$cmd.notificationType", value: "$cmd.event", descriptionText: text, displayed: false)
-	} else {
-		def value = cmd.v1AlarmLevel == 255 ? "active" : cmd.v1AlarmLevel ?: "inactive"
-		result << createEvent(name: "alarm $cmd.v1AlarmType", value: value, displayed: false)
+private convertToLocalTimeString(dt) {
+	def timeZoneId = location?.timeZone?.ID
+	if (timeZoneId) {
+		return dt.format("MM/dd/yyyy hh:mm:ss a", TimeZone.getTimeZone(timeZoneId))
 	}
-	result
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
-	def event = createEvent(descriptionText: "${device.displayName} woke up", isStateChange: false)
-	def cmds = []
-	if (!state.MSR) {
-		cmds << zwave.manufacturerSpecificV2.manufacturerSpecificGet()
-	}
-
-	if (device.currentValue("contact") == null) {
-		// In case our initial request didn't make it, initial state check no. 3
-		cmds << zwave.sensorBinaryV2.sensorBinaryGet(sensorType: zwave.sensorBinaryV2.SENSOR_TYPE_DOOR_WINDOW)
-	}
-
-	if (!state.lastbat || now() - state.lastbat > 53 * 60 * 60 * 1000) {
-		cmds << zwave.batteryV1.batteryGet()
-	}
-
-	def request = []
-	if (cmds.size() > 0) {
-		request = commands(cmds, 1000)
-		request << "delay 20000"
-	}
-	request << zwave.wakeUpV1.wakeUpNoMoreInformation().format()
-
-	[event, response(request)]
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
-	def map = [name: "battery", unit: "%"]
-	if (cmd.batteryLevel == 0xFF) {
-		map.value = 1
-		map.descriptionText = "${device.displayName} has a low battery"
-		map.isStateChange = true
-	} else {
-		map.value = cmd.batteryLevel
-	}
-	state.lastbat = now()
-	[createEvent(map)]
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
-	def result = []
-
-	def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
-	log.debug "msr: $msr"
-	updateDataValue("MSR", msr)
-
-	result << createEvent(descriptionText: "$device.displayName MSR: $msr", isStateChange: false)
-
-	// change DTH if required based on MSR
-	if (!retypeBasedOnMSR()) {
-		if (msr == "011A-0601-0901") {
-			// Enerwave motion doesn't always get the associationSet that the hub sends on join
-			result << response(zwave.associationV1.associationSet(groupingIdentifier: 1, nodeId: zwaveHubNodeId))
-		}
-	} else {
-		// if this is door/window sensor check initial contact state no.2
-		if (!device.currentState("contact")) {
-			result << response(command(zwave.sensorBinaryV2.sensorBinaryGet(sensorType: zwave.sensorBinaryV2.SENSOR_TYPE_DOOR_WINDOW)))
-		}
-	}
-
-	// every battery device can miss initial battery check. check initial battery state no.2
-	if (!device.currentState("battery")) {
-		result << response(command(zwave.batteryV1.batteryGet()))
-	}
-
-	result
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
-	def encapsulatedCommand = cmd.encapsulatedCommand(commandClassVersions)
-	if (encapsulatedCommand) {
-		zwaveEvent(encapsulatedCommand)
+	else {
+		return "$dt"
 	}
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
-	def version = commandClassVersions[cmd.commandClass as Integer]
-	def ccObj = version ? zwave.commandClass(cmd.commandClass, version) : zwave.commandClass(cmd.commandClass)
-	def encapsulatedCommand = ccObj?.command(cmd.command)?.parse(cmd.data)
-	if (encapsulatedCommand) {
-		return zwaveEvent(encapsulatedCommand)
-	}
+private static isDuplicateCommand(lastExecuted, allowedMil) {
+	!lastExecuted ? false : (lastExecuted + allowedMil > new Date().time)
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
-	def result = null
-	if (cmd.commandClass == 0x6C && cmd.parameter.size >= 4) { // Supervision encapsulated Message
-		// Supervision header is 4 bytes long, two bytes dropped here are the latter two bytes of the supervision header
-		cmd.parameter = cmd.parameter.drop(2)
-		// Updated Command Class/Command now with the remaining bytes
-		cmd.commandClass = cmd.parameter[0]
-		cmd.command = cmd.parameter[1]
-		cmd.parameter = cmd.parameter.drop(2)
-	}
-	def encapsulatedCommand = cmd.encapsulatedCommand(commandClassVersions)
-	log.debug "Command from endpoint ${cmd.sourceEndPoint}: ${encapsulatedCommand}"
-	if (encapsulatedCommand) {
-		result = zwaveEvent(encapsulatedCommand)
-	}
-	result
+private logDebug(msg) {
+	log.debug "$msg"
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.multicmdv1.MultiCmdEncap cmd) {
-	log.debug "MultiCmd with $numberOfCommands inner commands"
-	cmd.encapsulatedCommands(commandClassVersions).collect { encapsulatedCommand ->
-		zwaveEvent(encapsulatedCommand)
-	}.flatten()
-}
-
-def zwaveEvent(physicalgraph.zwave.Command cmd) {
-	createEvent(descriptionText: "$device.displayName: $cmd", displayed: false)
-}
-
-def initialPoll() {
-	def request = []
-	if (isEnerwave()) { // Enerwave motion doesn't always get the associationSet that the hub sends on join
-		request << zwave.associationV1.associationSet(groupingIdentifier: 1, nodeId: zwaveHubNodeId)
-	}
-
-	// check initial battery and contact state no.1
-	request << zwave.batteryV1.batteryGet()
-	request << zwave.sensorBinaryV2.sensorBinaryGet(sensorType: zwave.sensorBinaryV2.SENSOR_TYPE_DOOR_WINDOW)
-	request << zwave.manufacturerSpecificV2.manufacturerSpecificGet()
-	commands(request, 500) + ["delay 6000", command(zwave.wakeUpV1.wakeUpNoMoreInformation())]
-}
-
-private command(physicalgraph.zwave.Command cmd) {
-	if ((zwaveInfo?.zw == null && state.sec != 0) || zwaveInfo?.zw?.contains("s")) {
-		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
-	} else {
-		cmd.format()
-	}
-}
-
-private commands(commands, delay = 200) {
-	delayBetween(commands.collect { command(it) }, delay)
-}
-
-def retypeBasedOnMSR() {
-	def dthChanged = true
-	switch (state.MSR) {
-		case "0086-0002-002D":
-			log.debug "Changing device type to Z-Wave Water Sensor"
-			setDeviceType("Z-Wave Water Sensor")
-			break
-		case "011F-0001-0001":  // Schlage motion
-		case "014A-0001-0001":  // Ecolink motion
-		case "014A-0004-0001":  // Ecolink motion +
-		case "0060-0001-0002":  // Everspring SP814
-		case "0060-0001-0003":  // Everspring HSP02
-		case "011A-0601-0901":  // Enerwave ZWN-BPC
-			log.debug "Changing device type to Z-Wave Motion Sensor"
-			setDeviceType("Z-Wave Motion Sensor")
-			break
-		case "013C-0002-000D":  // Philio multi +
-			log.debug "Changing device type to 3-in-1 Multisensor Plus (SG)"
-			setDeviceType("3-in-1 Multisensor Plus (SG)")
-			break
-		case "0109-2001-0106":  // Vision door/window
-			log.debug "Changing device type to Z-Wave Plus Door/Window Sensor"
-			setDeviceType("Z-Wave Plus Door/Window Sensor")
-			break
-		case "0109-2002-0205": // Vision Motion
-			log.debug "Changing device type to Z-Wave Plus Motion/Temp Sensor"
-			setDeviceType("Z-Wave Plus Motion/Temp Sensor")
-			break
-		default:
-			dthChanged = false
-			break
-	}
-	dthChanged
-}
-
-// this is present in zwave-motion-sensor.groovy DTH too
-private isEnerwave() {
-	zwaveInfo?.mfr?.equals("011A") && zwaveInfo?.prod?.equals("0601") && zwaveInfo?.model?.equals("0901")
-}
-
-def clearTamper() {
-	sendEvent(name: "tamper", value: "clear")
+private logTrace(msg) {
+	log.trace "$msg"
 }

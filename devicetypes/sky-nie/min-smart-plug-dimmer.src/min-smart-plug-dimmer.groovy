@@ -123,11 +123,6 @@ metadata {
                 }
             }
         }
-
-        input "debugOutput", "bool",
-                title: "Enable debug logging?",
-                defaultValue: true,
-                required: false
     }
 }
 
@@ -149,9 +144,6 @@ private getNumberInput(param) {
 
 def installed() {
     logDebug "installed()..."
-    if (state.debugLoggingEnabled == null) {
-        state.debugLoggingEnabled = true
-    }
     state.refreshConfig = true
 }
 
@@ -160,8 +152,6 @@ def updated() {
         state.lastUpdated = new Date().time
 
         logDebug "updated()..."
-
-        state.debugLoggingEnabled = (safeToInt(settings?.debugOutput) != 0)
 
         initialize()
 
@@ -391,7 +381,7 @@ private secureCmd(cmd) {
     }
 }
 
-private getCommandClassVersions() {
+private static getCommandClassVersions() {
     [
             0x20: 1,	// Basic
             0x26: 3,	// Switch Multilevel
@@ -426,7 +416,7 @@ private setParamStoredValue(paramNum, value) {
 }
 
 // Sensor Types
-private getTempSensorType() { return 1 }
+private static getTempSensorType() { return 1 }
 
 // Configuration Parameters
 private getConfigParams() {
@@ -450,15 +440,15 @@ private getLedModeParam() {
 }
 
 private getAutoOffIntervalParam() {
-	return getParam(4, "Auto Turn-Off Timer(0,Disabled; 1--60480 minutes)", 4, 0, null, "0...60480")
+	return getParam(4, "Auto Turn-Off Timer(0,Disabled; 1--60480 minutes)", 4, 0, null, "0..60480")
 }
 
 private getAutoOnIntervalParam() {
-	return getParam(6, "Auto Turn-On Timer(0,Disabled; 1--60480 minutes)", 4, 0, null, "0...60480")
+	return getParam(6, "Auto Turn-On Timer(0,Disabled; 1--60480 minutes)", 4, 0, null, "0..60480")
 }
 
 private getNightLightParam() {
-	return getParam(7, "Night Light Settings(1,10%;2,20%,...10,100%)", 1, 2, null, "1...10")
+	return getParam(7, "Night Light Settings(1,10%;2,20%,...10,100%)", 1, 2, null, "1..10")
 }
 
 private getPowerFailureRecoveryParam() {
@@ -466,11 +456,11 @@ private getPowerFailureRecoveryParam() {
 }
 
 private getPushDimmingDurationParam() {
-    return getParam(9, "Push Dimming Duration(0,Disabled; 1--10 Seconds)", 1, 2, null, "0...10")
+    return getParam(9, "Push Dimming Duration(0,Disabled; 1--10 Seconds)", 1, 2, null, "0..10")
 }
 
 private getHoldDimmingDurationParam() {
-    return getParam(10, "Hold Dimming Duration(1--10 Seconds)", 1, 4, null, "1...10")
+    return getParam(10, "Hold Dimming Duration(1--10 Seconds)", 1, 4, null, "1..10")
 }
 
 private getMinimumBrightnessParam() {
@@ -482,7 +472,7 @@ private getMaximumBrightnessParam() {
 }
 
 private getTemperatureReportTimeParam() {
-    return getParam(13, "Temperature report time(1--60 minutes)", 1, 1, null, "1...60")
+    return getParam(13, "Temperature report time(1--60 minutes)", 1, 1, null, "1..60")
 }
 
 private getTemperatureReportThresholdParam() {
@@ -502,7 +492,7 @@ private getParam(num, name, size, defaultVal, options=null, range=null) {
     return map
 }
 
-private setDefaultOption(options, defaultVal) {
+private static setDefaultOption(options, defaultVal) {
     return options?.collectEntries { k, v ->
         if ("${k}" == "${defaultVal}") {
             v = "${v} [DEFAULT]"
@@ -566,7 +556,7 @@ private sendEventIfNew(name, value, displayed=true, type=null, unit="") {
     }
 }
 
-private validateRange(val, defaultVal, lowVal, highVal) {
+private static validateRange(val, defaultVal, lowVal, highVal) {
     val = safeToInt(val, defaultVal)
     if (val > highVal) {
         return highVal
@@ -579,7 +569,7 @@ private validateRange(val, defaultVal, lowVal, highVal) {
     }
 }
 
-private safeToInt(val, defaultVal=0) {
+private static safeToInt(val, defaultVal=0) {
     return "${val}"?.isInteger() ? "${val}".toInteger() : defaultVal
 }
 
@@ -593,20 +583,17 @@ private convertToLocalTimeString(dt) {
 	}
 }
 
-private isDuplicateCommand(lastExecuted, allowedMil) {
+private static isDuplicateCommand(lastExecuted, allowedMil) {
     !lastExecuted ? false : (lastExecuted + allowedMil > new Date().time)
 }
 
 private logDebug(msg) {
-	if (settings?.debugOutput || settings?.debugOutput == null) {
         log.debug "$msg"
-    }
 }
 
 private logTrace(msg) {
-	// log.trace "$msg"
+	log.trace "$msg"
 }
-
 
 def on() {
     logDebug "on()..."

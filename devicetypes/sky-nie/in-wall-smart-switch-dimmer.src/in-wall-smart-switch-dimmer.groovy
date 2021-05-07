@@ -36,32 +36,11 @@
 import groovy.json.JsonOutput
 import groovy.transform.Field
 
-@Field static Map commandClassVersions = [
-        0x20: 1,	// Basic
-        0x26: 3,	// Switch Multilevel
-        0x55: 1,	// Transport Service
-        0x59: 1,	// AssociationGrpInfo
-        0x5A: 1,	// DeviceResetLocally
-        0x5B: 1,	// CentralScene (3)
-        0x5E: 2,	// ZwaveplusInfo
-        0x6C: 1,	// Supervision
-        0x70: 1,	// Configuration
-        0x7A: 2,	// FirmwareUpdateMd
-        0x72: 2,	// ManufacturerSpecific
-        0x73: 1,	// Powerlevel
-        0x85: 2,	// Association
-        0x86: 1,	// Version (2)
-        0x8E: 2,	// Multi Channel Association
-        0x98: 1,	// Security S0
-        0x9F: 1		// Security S2
-]
-
 @Field static Map paddleControlOptions = [0:"Normal", 1:"Reverse", 2:"Toggle"]
 @Field static Integer reversePaddle = 1
 @Field static Integer togglePaddle = 2
 
 @Field static Map ledModeOptions = [0:"Off When On", 1:"On When On", 2:"Always Off", 3:"Always On"]
-
 
 @Field static Map autoOnOffIntervalOptions = [0:"Disabled", 1:"1 Minute", 2:"2 Minutes", 3:"3 Minutes", 4:"4 Minutes", 5:"5 Minutes", 6:"6 Minutes", 7:"7 Minutes", 8:"8 Minutes", 9:"9 Minutes", 10:"10 Minutes", 15:"15 Minutes", 20:"20 Minutes", 25:"25 Minutes", 30:"30 Minutes", 45:"45 Minutes", 60:"1 Hour", 120:"2 Hours", 180:"3 Hours", 240:"4 Hours", 300:"5 Hours", 360:"6 Hours", 420:"7 Hours", 480:"8 Hours", 540:"9 Hours", 600:"10 Hours", 720:"12 Hours", 1080:"18 Hours", 1440:"1 Day", 2880:"2 Days", 4320:"3 Days", 5760:"4 Days", 7200:"5 Days", 8640:"6 Days", 10080:"1 Week", 20160:"2 Weeks", 30240:"3 Weeks", 40320:"4 Weeks", 50400:"5 Weeks", 60480:"6 Weeks"]
 
@@ -556,6 +535,28 @@ def refreshSyncStatus() {
     sendEventIfNew("syncStatus", (changes ?  "${changes} Pending Changes" : "Synced"), false)
 }
 
+private static getCommandClassVersions() {
+    [
+            0x20: 1,	// Basic
+            0x26: 3,	// Switch Multilevel
+            0x55: 1,	// Transport Service
+            0x59: 1,	// AssociationGrpInfo
+            0x5A: 1,	// DeviceResetLocally
+            0x5B: 1,	// CentralScene (3)
+            0x5E: 2,	// ZwaveplusInfo
+            0x6C: 1,	// Supervision
+            0x70: 1,	// Configuration
+            0x7A: 2,	// FirmwareUpdateMd
+            0x72: 2,	// ManufacturerSpecific
+            0x73: 1,	// Powerlevel
+            0x85: 2,	// Association
+            0x86: 1,	// Version (2)
+            0x8E: 2,	// Multi Channel Association
+            0x98: 1,	// Security S0
+            0x9F: 1		// Security S2
+    ]
+}
+
 private getPendingChanges() {
     return configParams.count { "${it.value}" != "${getParamStoredValue(it.num)}" }
 }
@@ -625,7 +626,7 @@ private getParam(num, name, size, defaultVal, options) {
     return map
 }
 
-private setDefaultOption(options, defaultVal) {
+private static setDefaultOption(options, defaultVal) {
     return options?.collectEntries { k, v ->
         if ("${k}" == "${defaultVal}") {
             v = "${v} [DEFAULT]"
@@ -654,7 +655,7 @@ private sendEventIfNew(name, value, displayed=true, type=null, unit="") {
     }
 }
 
-private validateRange(val, defaultVal, lowVal, highVal) {
+private static validateRange(val, defaultVal, lowVal, highVal) {
     val = safeToInt(val, defaultVal)
     if (val > highVal) {
         return highVal
@@ -667,11 +668,11 @@ private validateRange(val, defaultVal, lowVal, highVal) {
     }
 }
 
-private safeToInt(val, defaultVal=0) {
+private static safeToInt(val, defaultVal=0) {
     return "${val}"?.isInteger() ? "${val}".toInteger() : defaultVal
 }
 
-private isDuplicateCommand(lastExecuted, allowedMil) {
+private static isDuplicateCommand(lastExecuted, allowedMil) {
     !lastExecuted ? false : (lastExecuted + allowedMil > new Date().time)
 }
 

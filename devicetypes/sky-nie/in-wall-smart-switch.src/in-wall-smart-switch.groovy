@@ -36,26 +36,6 @@
 import groovy.json.JsonOutput
 import groovy.transform.Field
 
-@Field static Map commandClassVersions = [
-        0x20: 1,	// Basic
-        0x25: 1,	// Switch Binary
-        0x55: 1,	// Transport Service
-        0x59: 1,	// AssociationGrpInfo
-        0x5A: 1,	// DeviceResetLocally
-        0x5B: 1,	// CentralScene (3)
-        0x5E: 2,	// ZwaveplusInfo
-        0x6C: 1,	// Supervision
-        0x70: 1,	// Configuration
-        0x7A: 2,	// FirmwareUpdateMd
-        0x72: 2,	// ManufacturerSpecific
-        0x73: 1,	// Powerlevel
-        0x85: 2,	// Association
-        0x86: 1,	// Version (2)
-        0x8E: 2,	// Multi Channel Association
-        0x98: 1,	// Security S0
-        0x9F: 1		// Security S2
-]
-
 @Field static Map paddleControlOptions = [0:"Normal", 1:"Reverse", 2:"Toggle"]
 @Field static Integer reversePaddle = 1
 @Field static Integer togglePaddle = 2
@@ -88,7 +68,6 @@ metadata {
         attribute "firmwareVersion", "string"
         attribute "lastCheckIn", "string"
         attribute "syncStatus", "string"
-
 
         fingerprint mfr: "0312", prod: "EE00", model: "EE01", deviceJoinName: "Minoston Smart Switch"    //MS10ZS Minoston Smart Switch
         fingerprint mfr: "0312", prod: "EE00", model: "EE03", deviceJoinName: "Minoston Smart Switch"    //MS12ZS Minoston Smart on/off Toggle Switch
@@ -127,6 +106,7 @@ metadata {
         configParams.each {
             createEnumInput("configParam${it.num}", "${it.name}:", it.value, it.options)
         }
+
         createEnumInput("createButton", "Create Button for Paddles?", 1, setDefaultOption(noYesOptions, 1))
         createEnumInput("debugOutput", "Enable Debug Logging?", 1, setDefaultOption(noYesOptions, 1))
     }
@@ -203,9 +183,13 @@ private addChildButton() {
                     componentLabel: "${device.displayName}-Button"
             ]
     )
+
     child?.sendEvent(name:"supportedButtonValues", value:JsonOutput.toJson(["pushed", "down","down_2x","up","up_2x"]), displayed:false)
+
     child?.sendEvent(name:"numberOfButtons", value:1, displayed:false)
+
     sendButtonEvent("pushed")
+
     return child
 }
 
@@ -514,6 +498,28 @@ def refreshSyncStatus() {
     sendEventIfNew("syncStatus", (changes ?  "${changes} Pending Changes" : "Synced"), false)
 }
 
+private static getCommandClassVersions() {
+    [
+            0x20: 1,	// Basic
+            0x25: 1,	// Switch Binary
+            0x55: 1,	// Transport Service
+            0x59: 1,	// AssociationGrpInfo
+            0x5A: 1,	// DeviceResetLocally
+            0x5B: 1,	// CentralScene (3)
+            0x5E: 2,	// ZwaveplusInfo
+            0x6C: 1,	// Supervision
+            0x70: 1,	// Configuration
+            0x7A: 2,	// FirmwareUpdateMd
+            0x72: 2,	// ManufacturerSpecific
+            0x73: 1,	// Powerlevel
+            0x85: 2,	// Association
+            0x86: 1,	// Version (2)
+            0x8E: 2,	// Multi Channel Association
+            0x98: 1,	// Security S0
+            0x9F: 1		// Security S2
+    ]
+}
+
 private getPendingChanges() {
     return configParams.count { "${it.value}" != "${getParamStoredValue(it.num)}" }
 }
@@ -567,7 +573,7 @@ private getParam(num, name, size, defaultVal, options) {
     return map
 }
 
-private setDefaultOption(options, defaultVal) {
+private static setDefaultOption(options, defaultVal) {
     return options?.collectEntries { k, v ->
         if ("${k}" == "${defaultVal}") {
             v = "${v} [DEFAULT]"
@@ -596,23 +602,11 @@ private sendEventIfNew(name, value, displayed=true, type=null, unit="") {
     }
 }
 
-private validateRange(val, defaultVal, lowVal, highVal) {
-    val = safeToInt(val, defaultVal)
-    if (val > highVal) {
-        return highVal
-    }
-    else if (val < lowVal) {
-        return lowVal
-    }
-    else {
-        return val
-    }
-}
-private safeToInt(val, defaultVal=0) {
+private static safeToInt(val, defaultVal=0) {
     return "${val}"?.isInteger() ? "${val}".toInteger() : defaultVal
 }
 
-private isDuplicateCommand(lastExecuted, allowedMil) {
+private static isDuplicateCommand(lastExecuted, allowedMil) {
     !lastExecuted ? false : (lastExecuted + allowedMil > new Date().time)
 }
 

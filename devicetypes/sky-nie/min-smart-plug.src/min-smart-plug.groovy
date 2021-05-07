@@ -33,31 +33,7 @@
  *
  */
 
-import groovy.json.JsonOutput
 import groovy.transform.Field
-
-@Field static Map commandClassVersions = [
-        0x20: 1,	// Basic
-        0x25: 1,	// Switch Binary
-        0x55: 1,	// Transport Service
-        0x59: 1,	// AssociationGrpInfo
-        0x5A: 1,	// DeviceResetLocally
-        0x27: 1,	// Switch All
-        0x5E: 2,	// ZwaveplusInfo
-        0x6C: 1,	// Supervision
-        0x70: 1,	// Configuration
-        0x7A: 2,	// FirmwareUpdateMd
-        0x72: 2,	// ManufacturerSpecific
-        0x73: 1,	// Powerlevel
-        0x85: 2,	// Association
-        0x86: 1,	// Version (2)
-        0x8E: 2,	// Multi Channel Association
-        0x98: 1,	// Security S0
-        0x9F: 1		// Security S2
-]
-
-@Field static Integer reversePaddle = 1
-@Field static Integer togglePaddle = 2
 
 @Field static Map ledModeOptions = [0:"On When On", 1:"Off When On", 2:"Always Off"]//, 3:"Always On"
 
@@ -144,9 +120,6 @@ def updated() {
 
         logDebug "updated()..."
 
-        state.debugLoggingEnabled = false
-        state.createButtonEnabled = false
-
         initialize()
 
         runIn(5, executeConfigureCmds, [overwrite: true])
@@ -161,54 +134,6 @@ private initialize() {
 
     if (!device.currentValue("checkInterval")) {
         sendEvent(checkIntervalEvt)
-    }
-
-    if (state.createButtonEnabled && !childDevices) {
-        try {
-            def child = addChildButton()
-            child?.sendEvent(checkIntervalEvt)
-        }
-        catch (ex) {
-            log.warn "Unable to create button device because the 'Child Button' DTH is not installed"
-        }
-    }
-    else if (!state.createButtonEnabled && childDevices) {
-        removeChildButton(childDevices[0])
-    }
-}
-
-private addChildButton() {
-    log.warn "Creating Button Device"
-
-    def child = addChildDevice(
-            "sky-nie",
-            "Child Button",
-            "${device.deviceNetworkId}-BUTTON",
-            device.getHub().getId(),
-            [
-                    completedSetup: true,
-                    isComponent: false,
-                    label: "${device.displayName}-Button",
-                    componentLabel: "${device.displayName}-Button"
-            ]
-    )
-
-    child?.sendEvent(name:"supportedButtonValues", value:JsonOutput.toJson(["pushed", "down","down_2x","up","up_2x"]), displayed:false)
-
-    child?.sendEvent(name:"numberOfButtons", value:1, displayed:false)
-
-    sendButtonEvent("pushed")
-
-    return child
-}
-
-private removeChildButton(child) {
-    try {
-        log.warn "Removing ${child.displayName}} "
-        deleteChildDevice(child.deviceNetworkId)
-    }
-    catch (e) {
-        log.error "Unable to remove ${child.displayName}!  Make sure that the device is not being used by any SmartApps."
     }
 }
 
@@ -244,10 +169,6 @@ def executeConfigureCmds() {
     configParams.each { param ->
         def storedVal = getParamStoredValue(param.num)
         def paramVal = param.value
-
-        if ((param == paddleControlParam) && state.createButtonEnabled && (param.value == togglePaddle)) {
-            log.warn "Only 'pushed', 'up_2x', and 'down_2x' button events are supported when Paddle Control is set to Toggle."
-        }
 
         if (state.resyncAll || ("${storedVal}" != "${paramVal}")) {
             logDebug "Changing ${param.name}(#${param.num}) from ${storedVal} to ${paramVal}"
@@ -440,19 +361,6 @@ private sendSwitchEvents(rawVal, type) {
     def switchVal = (rawVal == 0xFF) ? "on" : "off"
 
     sendEventIfNew("switch", switchVal, true, type)
-
-
-    def paddlesReversed = (paddleControlParam.value == reversePaddle)
-
-    if (state.createButtonEnabled && (type == "physical") && childDevices) {
-        if (paddleControlParam.value == togglePaddle) {
-            sendButtonEvent("pushed")
-        }
-        else {
-            def btnVal = ((rawVal && !paddlesReversed) || (!rawVal && paddlesReversed)) ? "up" : "down"
-            sendButtonEvent(btnVal)
-        }
-    }
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotification cmd){
@@ -505,6 +413,28 @@ def refreshSyncStatus() {
     sendEventIfNew("syncStatus", (changes ?  "${changes} Pending Changes" : "Synced"), false)
 }
 
+private static getCommandClassVersions() {
+    [
+            0x20: 1,	// Basic
+            0x25: 1,	// Switch Binary
+            0x55: 1,	// Transport Service
+            0x59: 1,	// AssociationGrpInfo
+            0x5A: 1,	// DeviceResetLocally
+            0x27: 1,	// Switch All
+            0x5E: 2,	// ZwaveplusInfo
+            0x6C: 1,	// Supervision
+            0x70: 1,	// Configuration
+            0x7A: 2,	// FirmwareUpdateMd
+            0x72: 2,	// ManufacturerSpecific
+            0x73: 1,	// Powerlevel
+            0x85: 2,	// Association
+            0x86: 1,	// Version (2)
+            0x8E: 2,	// Multi Channel Association
+            0x98: 1,	// Security S0
+            0x9F: 1		// Security S2
+    ]
+}
+
 private getPendingChanges() {
     return configParams.count { "${it.value}" != "${getParamStoredValue(it.num)}" }
 }
@@ -554,7 +484,7 @@ private getParam(num, name, size, defaultVal, options) {
     return map
 }
 
-private setDefaultOption(options, defaultVal) {
+private static setDefaultOption(options, defaultVal) {
     return options?.collectEntries { k, v ->
         if ("${k}" == "${defaultVal}") {
             v = "${v} [DEFAULT]"
@@ -583,18 +513,16 @@ private sendEventIfNew(name, value, displayed=true, type=null, unit="") {
     }
 }
 
-private safeToInt(val, defaultVal=0) {
+private static safeToInt(val, defaultVal=0) {
     return "${val}"?.isInteger() ? "${val}".toInteger() : defaultVal
 }
 
-private isDuplicateCommand(lastExecuted, allowedMil) {
+private static isDuplicateCommand(lastExecuted, allowedMil) {
     !lastExecuted ? false : (lastExecuted + allowedMil > new Date().time)
 }
 
 private logDebug(msg) {
-    if (state.debugLoggingEnabled) {
         log.debug "$msg"
-    }
 }
 
 private logTrace(msg) {
