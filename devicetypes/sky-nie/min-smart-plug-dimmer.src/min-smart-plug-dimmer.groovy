@@ -1,7 +1,7 @@
 /**
- *      Min Smart Plug Dimmer v1.1.1
+ *      Min Smart Plug Dimmer v1.1.2
  *
- *  	Models: MINOSTON (MP21ZD)
+ *  	Models: MINOSTON (MP21ZD MP22ZD/ZW39S ZW96SD)
  *
  *  Author:
  *   winnie (sky-nie)
@@ -9,7 +9,10 @@
  *	Documentation:
  *
  *  Changelog:
-  *
+ *
+ *    1.0.1 (06/30/2021)
+ *      - Add new product supported
+ *
  *    1.1.1 (05/06/2021)
  *      - 1.Solve the problem that the temperature cannot be displayed normally
  *      - 2.Synchronize some of the latest processing methods, refer to Minoston Door/Window Sensor
@@ -61,6 +64,7 @@ metadata {
             attribute "syncStatus", "string"
 
             fingerprint mfr: "0312", prod: "FF00", model: "FF0D", deviceJoinName: "Minoston Dimmer Switch" //MP21ZD Minoston Mini Smart Plug Dimmer
+            fingerprint mfr: "0312", prod: "FF07", model: "FF03", deviceJoinName: "Minoston Dimmer Switch" //MP22ZD Minoston Outdoor Smart Plug Dimmer
 	}
 
 	tiles(scale: 2) {
