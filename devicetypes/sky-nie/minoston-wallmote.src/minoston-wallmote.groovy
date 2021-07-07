@@ -1,5 +1,5 @@
 /**
- *  Minoston Wallmote v1.0.0
+ *  Minoston Wallmote v1.0.1
  *
  *  	Models: Eva Logik (ZW30) / MINOSTON (MS10Z)
  *
@@ -10,7 +10,7 @@
  *
  *  Changelog:
  *
- *    1.0.0 (07/07/2021)
+ *    1.0.1 (07/07/2021)
  *      - Initial Release
  *
  * Reference：
@@ -52,6 +52,19 @@ metadata {
 
         main("rich-control")
         details(["rich-control", childDeviceTiles("endpoints"), "battery"])
+    }
+
+    preferences {
+        configParams.each {
+            if (it.name) {
+                if (it.range) {
+                    getNumberInput(it)
+                }
+                else {
+                    getOptionsInput(it)
+                }
+            }
+        }
     }
 }
 
@@ -196,4 +209,116 @@ private static getButtonAttributesMap() {
             3: "double",
             4: "pushed_3x",
     ]
+}
+
+private getOptionsInput(param) {
+    input "configParam${param.num}", "enum",
+            title: "${param.name}:",
+            required: false,
+            defaultValue: "${param.value}",
+            options: param.options
+}
+
+private getNumberInput(param) {
+    input "configParam${param.num}", "number",
+            title: "${param.name}:",
+            required: false,
+            defaultValue: "${param.value}",
+            range: param.range
+}
+
+// Configuration Parameters
+private getConfigParams() {
+    [
+            batteryReportThresholdParam,
+            lowBatteryAlarmReportParam,
+            ledIndicator1ColorParam,
+            ledIndicator2ColorParam,
+            ledIndicator3ColorParam,
+            ledIndicator4ColorParam,
+            ledIndicatorBrightnessParam
+    ]
+}
+
+private getBatteryReportThresholdParam() {
+    return getParam(1, "Battery report threshold\n(1% - 20%)", 1, 10, null,"1..20")
+}
+
+private getLowBatteryAlarmReportParam() {
+    return getParam(2, "Low battery alarm report\n(5% - 20%)", 1, 5, null, "5..20")
+}
+
+private getLedIndicator1ColorParam() {
+    return getParam(3, "Led Indicator Color for the First button remote control", 1, 0, ledColorOptions)
+}
+
+private getLedIndicator2ColorParam() {
+    return getParam(4, "Led Indicator Color for the Second button remote control", 1, 1, ledColorOptions)
+}
+
+private getLedIndicator3ColorParam() {
+    return getParam(5, "Led Indicator Color for the Third button remote control", 1, 2, ledColorOptions)
+}
+
+private getLedIndicator4ColorParam() {
+    return getParam(6, "Led Indicator Color for the Fourth button remote control", 1, 3, ledColorOptions)
+}
+
+private getLedIndicatorBrightnessParam() {
+    return getParam(7, "Led Indicator Brightness", 1, 5, brightnessOptions)
+}
+
+private getParam(num, name, size, defaultVal, options=null, range=null) {
+    def val = safeToInt((settings ? settings["configParam${num}"] : null), defaultVal)
+
+    def map = [num: num, name: name, size: size, value: val]
+    if (options) {
+        map.valueName = options?.find { k, v -> "${k}" == "${val}" }?.value
+        map.options = setDefaultOption(options, defaultVal)
+    }
+    if (range) map.range = range
+
+    return map
+}
+
+private static setDefaultOption(options, defaultVal) {
+    return options?.collectEntries { k, v ->
+        if ("${k}" == "${defaultVal}") {
+            v = "${v} [DEFAULT]"
+        }
+        ["$k": "$v"]
+    }
+}
+
+// Setting Options
+private static getLedColorOptions() {
+    return [
+            "0":"White",
+            "1":"Purple",
+            "2":"Orange",
+            "3":"Cyan",
+            "4":"Red",
+            "5":"Green",
+            "6":"Blue"
+    ]
+}
+
+private static getBrightnessOptions() {
+    return [
+            "0":"LED off",
+            "1":"10% Brightness",
+            "2":"20% Brightness",
+            "3":"30% Brightness",
+            "4":"40% Brightness",
+            "5":"50% Brightness",
+            "6":"60% Brightness",
+            "7":"70% Brightness",
+            "8":"80% Brightness",
+            "9":"90% Brightness",
+            "10":"100% Brightness"
+    ]
+}
+
+private static safeToInt(val, defaultVal=0) {
+    return "${val}"?.isInteger() ? "${val}".toInteger() : defaultVal
 }
