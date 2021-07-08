@@ -129,14 +129,6 @@ private getNumberInput(param) {
 def installed() {
 	logDebug "installed()..."
 	state.refreshConfig = true
-	initializeCheckInInterval()
-}
-
-private initializeCheckInInterval() {
-	if (!device?.currentValue("checkInterval")) {
-		// Have device flagged as offline if it goes more than 8hrs 5min without checking in.
-		sendEvent(name: "checkInterval", value: ((4 * 60 * 60 * 2) + (5 * 60)), displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-	}
 }
 
 def updated() {
@@ -144,7 +136,6 @@ def updated() {
 		state.lastUpdated = new Date().time
 
 		logTrace "updated()"
-		initializeCheckInInterval()
 
 		refreshPendingChanges()
 
@@ -154,8 +145,6 @@ def updated() {
 
 def configure() {
 	logTrace "configure()"
-
-	initializeCheckInInterval()
 
 	runIn(8, executeConfigure)
 }

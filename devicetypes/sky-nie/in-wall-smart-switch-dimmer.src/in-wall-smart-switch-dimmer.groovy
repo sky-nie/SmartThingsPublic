@@ -153,14 +153,6 @@ def updated() {
 }
 
 private initialize() {
-    def checkInterval = ((60 * 60 * 3) + (5 * 60))
-
-    def checkIntervalEvt = [name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"]]
-
-    if (!device.currentValue("checkInterval")) {
-        sendEvent(checkIntervalEvt)
-    }
-
     if (state.createButtonEnabled && !childDevices) {
         try {
             def child = addChildButton()
