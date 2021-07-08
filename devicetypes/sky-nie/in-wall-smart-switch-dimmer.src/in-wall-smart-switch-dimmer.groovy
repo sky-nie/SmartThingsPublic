@@ -34,23 +34,6 @@
  */
 
 import groovy.json.JsonOutput
-import groovy.transform.Field
-
-@Field static Map paddleControlOptions = [0:"Normal", 1:"Reverse", 2:"Toggle"]
-@Field static Integer reversePaddle = 1
-@Field static Integer togglePaddle = 2
-
-@Field static Map ledModeOptions = [0:"Off When On", 1:"On When On", 2:"Always Off", 3:"Always On"]
-
-@Field static Map autoOnOffIntervalOptions = [0:"Disabled", 1:"1 Minute", 2:"2 Minutes", 3:"3 Minutes", 4:"4 Minutes", 5:"5 Minutes", 6:"6 Minutes", 7:"7 Minutes", 8:"8 Minutes", 9:"9 Minutes", 10:"10 Minutes", 15:"15 Minutes", 20:"20 Minutes", 25:"25 Minutes", 30:"30 Minutes", 45:"45 Minutes", 60:"1 Hour", 120:"2 Hours", 180:"3 Hours", 240:"4 Hours", 300:"5 Hours", 360:"6 Hours", 420:"7 Hours", 480:"8 Hours", 540:"9 Hours", 600:"10 Hours", 720:"12 Hours", 1080:"18 Hours", 1440:"1 Day", 2880:"2 Days", 4320:"3 Days", 5760:"4 Days", 7200:"5 Days", 8640:"6 Days", 10080:"1 Week", 20160:"2 Weeks", 30240:"3 Weeks", 40320:"4 Weeks", 50400:"5 Weeks", 60480:"6 Weeks"]
-
-@Field static Map powerFailureRecoveryOptions = [0:"Turn Off", 1:"Turn On", 2:"Restore Last State"]
-
-@Field static Map noYesOptions = [0:"No", 1:"Yes"]
-
-@Field static Map dimmingDurationOptions = [1:"1 Second", 2:"2 Seconds", 3:"3 Seconds", 4:"4 Seconds", 5:"5 Seconds", 6:"6 Seconds", 7:"7 Seconds", 8:"8 Seconds", 9:"9 Seconds", 10:"10 Seconds"]
-
-@Field static Map brightnessOptions = [0:"Disabled", 1:"1%", 5:"5%", 10:"10%", 15:"15%", 20:"20%", 25:"25%", 30:"30%", 35:"35%", 40:"40%", 45:"45%", 50:"50%", 55:"55%",60:"60%", 65:"65%", 70:"70%", 75:"75%", 80:"80%", 85:"85%", 90:"90%", 95:"95%", 99:"99%"]
 
 metadata {
     definition (
@@ -111,20 +94,35 @@ metadata {
 	}
     preferences {
         configParams.each {
-            createEnumInput("configParam${it.num}", "${it.name}:", it.value, it.options)
+            if (it.name) {
+                if (it.range) {
+                    getNumberInput(it)
+                }
+                else {
+                    getOptionsInput(it)
+                }
+            }
         }
 
-        createEnumInput("createButton", "Create Button for Paddles?", 1, setDefaultOption(noYesOptions, 1))
-        createEnumInput("debugOutput", "Enable Debug Logging?", 1, setDefaultOption(noYesOptions, 1))
+        input(type: "enum", name: "createButton", required: false, title: "Create Button for Paddles?", options: ["No", "Yes"], defaultValue:"Yes")
+        input(type: "enum", name: "debugOutput", required: false, title: "Enable Debug Logging?", options: ["No", "Yes"], defaultValue:"Yes")
     }
 }
 
-private createEnumInput(name, title, defaultVal, options) {
-    input name, "enum",
-            title: title,
+private getOptionsInput(param) {
+    input "configParam${param.num}", "enum",
+            title: "${param.name}:",
             required: false,
-            defaultValue: defaultVal.toString(),
-            options: options
+            defaultValue: "${param.value}",
+            options: param.options
+}
+
+private getNumberInput(param) {
+    input "configParam${param.num}", "number",
+            title: "${param.name}:",
+            required: false,
+            defaultValue: "${param.value}",
+            range: param.range
 }
 
 def installed() {
@@ -235,7 +233,7 @@ def executeConfigureCmds() {
         def storedVal = getParamStoredValue(param.num)
         def paramVal = param.value
 
-        if ((param == paddleControlParam) && state.createButtonEnabled && (param.value == togglePaddle)) {
+        if ((param == paddleControlParam) && state.createButtonEnabled && (param.value == 2)) {
             log.warn "Only 'pushed', 'up_2x', and 'down_2x' button events are supported when Paddle Control is set to Toggle."
         }
 
@@ -458,10 +456,10 @@ private sendSwitchEvents(rawVal, type) {
         sendEventIfNew("level", rawVal, true, type, "%")
     }
 
-    def paddlesReversed = (paddleControlParam.value == reversePaddle)
+    def paddlesReversed = (paddleControlParam.value == 1)
 
     if (state.createButtonEnabled && (type == "physical") && childDevices) {
-        if (paddleControlParam.value == togglePaddle) {
+        if (paddleControlParam.value == 2) {
             sendButtonEvent("pushed")
         }
         else {
@@ -583,11 +581,11 @@ private getLedModeParam() {
 }
 
 private getAutoOffIntervalParam() {
-    return getParam(4, "Auto Turn-Off Timer", 4, 0, autoOnOffIntervalOptions)
+    return getParam(4, "Auto Turn-Off Timer(0,Disabled; 1--60480 minutes)", 4, 0, null, "0..60480")
 }
 
 private getAutoOnIntervalParam() {
-    return getParam(6, "Auto Turn-On Timer", 4, 0, autoOnOffIntervalOptions)
+    return getParam(6, "Auto Turn-On Timer(0,Disabled; 1--60480 minutes)", 4, 0, null, "0..60480")
 }
 
 private getPowerFailureRecoveryParam() {
@@ -603,16 +601,18 @@ private getHoldDimmingDurationParam() {
 }
 
 private getMinimumBrightnessParam() {
-    return getParam(11, "Minimum Brightness", 1, 10, brightnessOptions)
+    return getParam(11, "Minimum Brightness(0,Disabled; 1--99:1%--99%)", 1, 10, null,"0..99")
 }
 
-private getParam(num, name, size, defaultVal, options) {
+private getParam(num, name, size, defaultVal, options=null, range=null) {
     def val = safeToInt((settings ? settings["configParam${num}"] : null), defaultVal)
 
     def map = [num: num, name: name, size: size, value: val]
     if (options) {
+        map.valueName = options?.find { k, v -> "${k}" == "${val}" }?.value
         map.options = setDefaultOption(options, defaultVal)
     }
+    if (range) map.range = range
 
     return map
 }
@@ -624,6 +624,31 @@ private static setDefaultOption(options, defaultVal) {
         }
         ["$k": "$v"]
     }
+}
+
+private static getPaddleControlOptions() {
+    return  [0:"Normal", 1:"Reverse", 2:"Toggle"]
+}
+
+private static getLedModeOptions() {
+    return [
+            "0":"Off When On", "1":"On When On", "2":"Always Off", "3":"Always On"
+    ]
+}
+
+private static getPowerFailureRecoveryOptions() {
+    return [
+            "0":"Turn Off", "1":"Turn On", "2":"Restore Last State"
+    ]
+}
+
+private static getDimmingDurationOptions() {
+    def options = [:]
+    options["1"] = "1 Second"
+    for(def it = 2; it < 11; it+=1){
+        options["${it}"] = "${it} Seconds"
+    }
+    return options
 }
 
 private sendEventIfNew(name, value, displayed=true, type=null, unit="") {
