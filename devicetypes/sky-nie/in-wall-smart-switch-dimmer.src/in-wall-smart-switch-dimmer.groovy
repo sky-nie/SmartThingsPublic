@@ -545,7 +545,7 @@ private static getCommandClassVersions() {
             0x86: 1,	// Version (2)
             0x8E: 2,	// Multi Channel Association
             0x98: 1,	// Security S0
-            0x9F: 1		// Security S2
+            0x9F: 1 	// Security S2
     ]
 }
 
@@ -589,7 +589,6 @@ private getAutoOffIntervalParam() {
 private getAutoOnIntervalParam() {
     return getParam(6, "Auto Turn-On Timer", 4, 0, autoOnOffIntervalOptions)
 }
-
 
 private getPowerFailureRecoveryParam() {
     return getParam(8, "Power Failure Recovery", 1, 0, powerFailureRecoveryOptions)

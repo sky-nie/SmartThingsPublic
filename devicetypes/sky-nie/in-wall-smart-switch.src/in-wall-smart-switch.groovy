@@ -508,7 +508,7 @@ private static getCommandClassVersions() {
             0x86: 1,	// Version (2)
             0x8E: 2,	// Multi Channel Association
             0x98: 1,	// Security S0
-            0x9F: 1		// Security S2
+            0x9F: 1 	// Security S2
     ]
 }
 

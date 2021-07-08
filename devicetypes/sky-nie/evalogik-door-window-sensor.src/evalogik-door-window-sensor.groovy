@@ -451,7 +451,7 @@ private configSetCmd(param, value) {
 
 private secureCmd(cmd) {
 	try {
-        if (zwaveInfo?.zw?.contains("s") || ("0x98" in device?.rawDescription?.split(" "))) {
+		if (zwaveInfo?.zw?.contains("s") || ("0x98" in device?.rawDescription?.split(" "))) {
 			return zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 		}
 		else {
@@ -610,7 +610,6 @@ private static setDefaultOption(options, defaultVal) {
 	}
 }
 
-
 // Setting Options
 private static getSwitchTemperatureUnitOptions() {
 	return [
@@ -638,48 +637,6 @@ private static getMinTemperatureOffsetOptions() {
 	}
 	return options
 }
-
-//private sendEventIfNew(name, value, displayed=true, type=null, unit="") {
-//	def desc = "${name} is ${value}${unit}"
-//	if (device.currentValue(name) != value) {
-//		logDebug(desc)
-//
-//		def evt = [name: name, value: value, descriptionText: "${device.displayName} ${desc}", displayed: displayed]
-//
-//		if (type) {
-//			evt.type = type
-//		}
-//		if (unit) {
-//			evt.unit = unit
-//		}
-//		sendEvent(evt)
-//	}
-//	else {
-//		logTrace(desc)
-//	}
-//}
-//
-//def ledIndicatorOn() {
-//	return delayBetween([
-//			indicatorSetCmd(0xFF),
-//			indicatorGetCmd()
-//	], 300)
-//}
-//
-//def ledIndicatorOff() {
-//	return delayBetween([
-//			indicatorSetCmd(0x00),
-//			indicatorGetCmd()
-//	], 300)
-//}
-//
-//private String indicatorGetCmd() {
-//	return secureCmd(zwave.indicatorV1.indicatorGet())
-//}
-//
-//private String indicatorSetCmd(int value) {
-//	return secureCmd(zwave.indicatorV1.indicatorSet(value: value))
-//}
 
 def sensorValueEvent(value) {
 	if (value) {
