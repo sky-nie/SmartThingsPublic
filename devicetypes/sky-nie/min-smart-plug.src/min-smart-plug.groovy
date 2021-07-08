@@ -117,7 +117,13 @@ private getNumberInput(param) {
 
 def installed() {
     logDebug "installed()..."
+    sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+}
 
+private static def getCheckInterval() {
+    // These are battery-powered devices, and it's not very critical
+    // to know whether they're online or not – 12 hrs
+    return (60 * 60 * 3) + (5 * 60)
 }
 
 def updated() {
@@ -125,6 +131,9 @@ def updated() {
         state.lastUpdated = new Date().time
 
         logDebug "updated()..."
+        if (device.latestValue("checkInterval") != checkInterval) {
+            sendEvent(name: "checkInterval", value: checkInterval, displayed: false)
+        }
 
         runIn(5, executeConfigureCmds, [overwrite: true])
     }
