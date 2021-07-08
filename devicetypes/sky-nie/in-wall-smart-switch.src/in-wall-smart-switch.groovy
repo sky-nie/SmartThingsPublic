@@ -128,7 +128,7 @@ def installed() {
         state.debugLoggingEnabled = true
         state.createButtonEnabled = true
     }
-    sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+    sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 private static def getCheckInterval() {
